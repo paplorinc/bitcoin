@@ -527,6 +527,11 @@ public:
             throw std::ios_base::failure("Rewind limit must be less than buffer size");
     }
 
+    [[nodiscard]] bool IsNull() const
+    {
+        return m_src.IsNull();
+    }
+
     //! check whether we're at the end of the source file
     bool eof() const {
         return m_read_pos == nSrcPos && m_src.feof();
