@@ -1032,11 +1032,12 @@ bool BlockManager::ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos) cons
     block.SetNull();
 
     // Open history file to read
-    AutoFile filein{OpenBlockFile(pos, true)};
-    if (filein.IsNull()) {
+    AutoFile file{OpenBlockFile(pos, true)};
+    if (file.IsNull()) {
         LogError("%s: OpenBlockFile failed for %s\n", __func__, pos.ToString());
         return false;
     }
+    BufferedFile filein{file, 1024, 0};
 
     // Read block
     try {
