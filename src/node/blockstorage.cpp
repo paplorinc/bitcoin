@@ -32,6 +32,7 @@
 #include <util/check.h>
 #include <util/fs.h>
 #include <util/signalinterrupt.h>
+#include <util/trace.h>
 #include <util/strencodings.h>
 #include <util/translation.h>
 #include <validation.h>
@@ -1039,6 +1040,7 @@ bool BlockManager::ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos) cons
 
     // Read block
     try {
+        TRACE_RAII(block_manager, read_block_from_disk_unserialize);
         filein >> TX_WITH_WITNESS(block);
     } catch (const std::exception& e) {
         LogError("%s: Deserialize or I/O error - %s at %s\n", __func__, e.what(), pos.ToString());
