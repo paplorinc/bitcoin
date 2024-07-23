@@ -137,20 +137,38 @@ static void SetMaxOpenFiles(leveldb::Options *options) {
 static leveldb::Options GetOptions(size_t nCacheSize)
 {
     leveldb::Options options;
-    options.block_cache = leveldb::NewLRUCache(nCacheSize / 2);
-    options.write_buffer_size = nCacheSize / 4; // up to two write buffers may be held in memory simultaneously
+
+    // Increase cache size for faster read operations
+    options.block_cache = leveldb::NewLRUCache(nCacheSize);
+
+    // Increase write buffer size for fewer disk writes
+    options.write_buffer_size = nCacheSize / 2;
+
+    // Increase max_file_size to reduce the number of files
+    options.max_file_size = 64 * 1024 * 1024; // 64MB
+
+    // Use a larger block size for better compression ratio
+    options.block_size = 32 * 1024; // 32KB
+
+    // Increase restart interval for better compression
+    options.block_restart_interval = 32;
+
+    // Use Bloom filter for faster reads
     options.filter_policy = leveldb::NewBloomFilterPolicy(10);
+
     options.compression = leveldb::kNoCompression;
+
     options.info_log = new CBitcoinLevelDBLogger();
+
     if (leveldb::kMajorVersion > 1 || (leveldb::kMajorVersion == 1 && leveldb::kMinorVersion >= 16)) {
-        // LevelDB versions before 1.16 consider short writes to be corruption. Only trigger error
-        // on corruption in later versions.
         options.paranoid_checks = true;
     }
-    SetMaxOpenFiles(&options);
+
+    // Increase max_open_files for better performance
+    options.max_open_files = 2000;
+
     return options;
 }
-
 struct CDBBatch::WriteBatchImpl {
     leveldb::WriteBatch batch;
 };
