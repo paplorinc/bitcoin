@@ -34,6 +34,7 @@ void VersionEdit::Clear() {
   has_prev_log_number_ = false;
   has_next_file_number_ = false;
   has_last_sequence_ = false;
+  compact_pointers_.clear();
   deleted_files_.clear();
   new_files_.clear();
 }
@@ -232,7 +233,7 @@ std::string VersionEdit::DebugString() const {
     r.append(compact_pointers_[i].second.DebugString());
   }
   for (const auto& deleted_files_kvp : deleted_files_) {
-    r.append("\n  DeleteFile: ");
+    r.append("\n  RemoveFile: ");
     AppendNumberTo(&r, deleted_files_kvp.first);
     r.append(" ");
     AppendNumberTo(&r, deleted_files_kvp.second);

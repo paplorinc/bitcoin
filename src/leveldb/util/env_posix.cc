@@ -4,9 +4,10 @@
 
 #include <dirent.h>
 #include <fcntl.h>
-#include <pthread.h>
 #include <sys/mman.h>
+#ifndef __Fuchsia__
 #include <sys/resource.h>
+#endif
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -42,14 +43,14 @@ namespace {
 // Set by EnvPosixTestHelper::SetReadOnlyMMapLimit() and MaxOpenFiles().
 int g_open_read_only_file_limit = -1;
 
-// Up to 4096 mmap regions for 64-bit binaries; none for 32-bit.
-constexpr const int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 4096 : 0;
+// Up to 1000 mmap regions for 64-bit binaries; none for 32-bit.
+constexpr const int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
 
 // Can be set using EnvPosixTestHelper::SetReadOnlyMMapLimit().
 int g_mmap_limit = kDefaultMmapLimit;
 
 // Common flags defined for all posix open operations
-#if HAVE_O_CLOEXEC
+#if defined(HAVE_O_CLOEXEC)
 constexpr const int kOpenBaseFlags = O_CLOEXEC;
 #else
 constexpr const int kOpenBaseFlags = 0;
@@ -72,7 +73,14 @@ Status PosixError(const std::string& context, int error_number) {
 class Limiter {
  public:
   // Limit maximum number of resources to |max_acquires|.
-  Limiter(int max_acquires) : acquires_allowed_(max_acquires) {}
+  Limiter(int max_acquires)
+      :
+#if !defined(NDEBUG)
+        max_acquires_(max_acquires),
+#endif  // !defined(NDEBUG)
+        acquires_allowed_(max_acquires) {
+    assert(max_acquires >= 0);
+  }
 
   Limiter(const Limiter&) = delete;
   Limiter operator=(const Limiter&) = delete;
@@ -85,15 +93,35 @@ class Limiter {
 
     if (old_acquires_allowed > 0) return true;
 
-    acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
+    int pre_increment_acquires_allowed =
+        acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
+
+    // Silence compiler warnings about unused arguments when NDEBUG is defined.
+    (void)pre_increment_acquires_allowed;
+    // If the check below fails, Release() was called more times than acquire.
+    assert(pre_increment_acquires_allowed < max_acquires_);
+
     return false;
   }
 
   // Release a resource acquired by a previous call to Acquire() that returned
   // true.
-  void Release() { acquires_allowed_.fetch_add(1, std::memory_order_relaxed); }
+  void Release() {
+    int old_acquires_allowed =
+        acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
+
+    // Silence compiler warnings about unused arguments when NDEBUG is defined.
+    (void)old_acquires_allowed;
+    // If the check below fails, Release() was called more times than acquire.
+    assert(old_acquires_allowed < max_acquires_);
+  }
 
  private:
+#if !defined(NDEBUG)
+  // Catches an excessive number of Release() calls.
+  const int max_acquires_;
+#endif  // !defined(NDEBUG)
+
   // The number of available resources.
   //
   // This is a counter and is not tied to the invariants of any other class, so
@@ -108,7 +136,7 @@ class Limiter {
 class PosixSequentialFile final : public SequentialFile {
  public:
   PosixSequentialFile(std::string filename, int fd)
-      : fd_(fd), filename_(filename) {}
+      : fd_(fd), filename_(std::move(filename)) {}
   ~PosixSequentialFile() override { close(fd_); }
 
   Status Read(size_t n, Slice* result, char* scratch) override {
@@ -134,8 +162,6 @@ class PosixSequentialFile final : public SequentialFile {
     }
     return Status::OK();
   }
-
-  virtual std::string GetName() const override { return filename_; }
 
  private:
   const int fd_;
@@ -197,8 +223,6 @@ class PosixRandomAccessFile final : public RandomAccessFile {
     return status;
   }
 
-  virtual std::string GetName() const override { return filename_; }
-
  private:
   const bool has_permanent_fd_;  // If false, the file is opened on every read.
   const int fd_;                 // -1 if has_permanent_fd_ is false.
@@ -218,7 +242,7 @@ class PosixMmapReadableFile final : public RandomAccessFile {
   // over the ownership of the region.
   //
   // |mmap_limiter| must outlive this instance. The caller must have already
-  // aquired the right to use one mmap region, which will be released when this
+  // acquired the right to use one mmap region, which will be released when this
   // instance is destroyed.
   PosixMmapReadableFile(std::string filename, char* mmap_base, size_t length,
                         Limiter* mmap_limiter)
@@ -242,8 +266,6 @@ class PosixMmapReadableFile final : public RandomAccessFile {
     *result = Slice(mmap_base_ + offset, n);
     return Status::OK();
   }
-
-  virtual std::string GetName() const override { return filename_; }
 
  private:
   char* const mmap_base_;
@@ -325,7 +347,7 @@ class PosixWritableFile final : public WritableFile {
       return status;
     }
 
-    return SyncFd(fd_, filename_, false);
+    return SyncFd(fd_, filename_);
   }
 
  private:
@@ -360,7 +382,7 @@ class PosixWritableFile final : public WritableFile {
     if (fd < 0) {
       status = PosixError(dirname_, errno);
     } else {
-      status = SyncFd(fd, dirname_, true);
+      status = SyncFd(fd, dirname_);
       ::close(fd);
     }
     return status;
@@ -372,7 +394,7 @@ class PosixWritableFile final : public WritableFile {
   //
   // The path argument is only used to populate the description string in the
   // returned Status if an error occurs.
-  static Status SyncFd(int fd, const std::string& fd_path, bool syncing_dir) {
+  static Status SyncFd(int fd, const std::string& fd_path) {
 #if HAVE_FULLFSYNC
     // On macOS and iOS, fsync() doesn't guarantee durability past power
     // failures. fcntl(F_FULLFSYNC) is required for that purpose. Some
@@ -390,11 +412,6 @@ class PosixWritableFile final : public WritableFile {
 #endif  // HAVE_FDATASYNC
 
     if (sync_success) {
-      return Status::OK();
-    }
-    // Do not crash if filesystem can't fsync directories
-    // (see https://github.com/bitcoin/bitcoin/pull/10000)
-    if (syncing_dir && errno == EINVAL) {
       return Status::OK();
     }
     return PosixError(fd_path, errno);
@@ -436,8 +453,6 @@ class PosixWritableFile final : public WritableFile {
   static bool IsManifest(const std::string& filename) {
     return Basename(filename).starts_with("MANIFEST");
   }
-
-  virtual std::string GetName() const override { return filename_; }
 
   // buf_[0, pos_ - 1] contains data to be written to fd_.
   char buf_[kWritableFileBufferSize];
@@ -600,7 +615,7 @@ class PosixEnv : public Env {
     return Status::OK();
   }
 
-  Status DeleteFile(const std::string& filename) override {
+  Status RemoveFile(const std::string& filename) override {
     if (::unlink(filename.c_str()) != 0) {
       return PosixError(filename, errno);
     }
@@ -614,7 +629,7 @@ class PosixEnv : public Env {
     return Status::OK();
   }
 
-  Status DeleteDir(const std::string& dirname) override {
+  Status RemoveDir(const std::string& dirname) override {
     if (::rmdir(dirname.c_str()) != 0) {
       return PosixError(dirname, errno);
     }
@@ -741,7 +756,7 @@ class PosixEnv : public Env {
   // Instances are constructed on the thread calling Schedule() and used on the
   // background thread.
   //
-  // This structure is thread-safe beacuse it is immutable.
+  // This structure is thread-safe because it is immutable.
   struct BackgroundWorkItem {
     explicit BackgroundWorkItem(void (*function)(void* arg), void* arg)
         : function(function), arg(arg) {}
@@ -770,6 +785,10 @@ int MaxOpenFiles() {
   if (g_open_read_only_file_limit >= 0) {
     return g_open_read_only_file_limit;
   }
+#ifdef __Fuchsia__
+  // Fuchsia doesn't implement getrlimit.
+  g_open_read_only_file_limit = 50;
+#else
   struct ::rlimit rlim;
   if (::getrlimit(RLIMIT_NOFILE, &rlim)) {
     // getrlimit failed, fallback to hard-coded default.
@@ -780,6 +799,7 @@ int MaxOpenFiles() {
     // Allow use of 20% of available file descriptors for read-only files.
     g_open_read_only_file_limit = rlim.rlim_cur / 5;
   }
+#endif
   return g_open_read_only_file_limit;
 }
 
