@@ -800,11 +800,10 @@ BOOST_AUTO_TEST_CASE(ccoins_add)
 
 void CheckWriteCoins(CAmount parent_value, CAmount child_value, CAmount expected_value, char parent_flags, char child_flags, char expected_flags)
 {
-    SingleEntryCacheTest test(ABSENT, parent_value, parent_flags);
-
     CAmount result_value;
     char result_flags;
     try {
+        SingleEntryCacheTest test(ABSENT, parent_value, parent_flags);
         WriteCoinsViewEntry(test.cache, child_value, child_flags);
         test.cache.SelfTest(/*sanity_check=*/false);
         GetCoinsMapEntry(test.cache.map(), result_value, result_flags);
@@ -828,7 +827,7 @@ BOOST_AUTO_TEST_CASE(ccoins_write)
      */
     CheckWriteCoins(ABSENT, ABSENT, ABSENT, NO_ENTRY   , NO_ENTRY   , NO_ENTRY   );
     CheckWriteCoins(ABSENT, SPENT , SPENT , NO_ENTRY   , DIRTY      , DIRTY      );
-    CheckWriteCoins(ABSENT, SPENT , ABSENT, NO_ENTRY   , DIRTY|FRESH, NO_ENTRY   );
+    CheckWriteCoins(ABSENT, SPENT , FAIL  , NO_ENTRY   , DIRTY|FRESH, NO_ENTRY   );
     CheckWriteCoins(ABSENT, VALUE2, VALUE2, NO_ENTRY   , DIRTY      , DIRTY      );
     CheckWriteCoins(ABSENT, VALUE2, VALUE2, NO_ENTRY   , DIRTY|FRESH, DIRTY|FRESH);
     CheckWriteCoins(SPENT , ABSENT, SPENT , 0          , NO_ENTRY   , 0          );
@@ -836,13 +835,13 @@ BOOST_AUTO_TEST_CASE(ccoins_write)
     CheckWriteCoins(SPENT , ABSENT, SPENT , DIRTY      , NO_ENTRY   , DIRTY      );
     CheckWriteCoins(SPENT , ABSENT, SPENT , DIRTY|FRESH, NO_ENTRY   , DIRTY|FRESH);
     CheckWriteCoins(SPENT , SPENT , SPENT , 0          , DIRTY      , DIRTY      );
-    CheckWriteCoins(SPENT , SPENT , SPENT , 0          , DIRTY|FRESH, DIRTY      );
+    CheckWriteCoins(SPENT , SPENT , FAIL  , 0          , DIRTY|FRESH, NO_ENTRY   );
     CheckWriteCoins(SPENT , SPENT , ABSENT, FRESH      , DIRTY      , NO_ENTRY   );
-    CheckWriteCoins(SPENT , SPENT , ABSENT, FRESH      , DIRTY|FRESH, NO_ENTRY   );
+    CheckWriteCoins(SPENT , SPENT , FAIL  , FRESH      , DIRTY|FRESH, NO_ENTRY   );
     CheckWriteCoins(SPENT , SPENT , SPENT , DIRTY      , DIRTY      , DIRTY      );
-    CheckWriteCoins(SPENT , SPENT , SPENT , DIRTY      , DIRTY|FRESH, DIRTY      );
+    CheckWriteCoins(SPENT , SPENT , FAIL  , DIRTY      , DIRTY|FRESH, NO_ENTRY   );
     CheckWriteCoins(SPENT , SPENT , ABSENT, DIRTY|FRESH, DIRTY      , NO_ENTRY   );
-    CheckWriteCoins(SPENT , SPENT , ABSENT, DIRTY|FRESH, DIRTY|FRESH, NO_ENTRY   );
+    CheckWriteCoins(SPENT , SPENT , FAIL  , DIRTY|FRESH, DIRTY|FRESH, NO_ENTRY   );
     CheckWriteCoins(SPENT , VALUE2, VALUE2, 0          , DIRTY      , DIRTY      );
     CheckWriteCoins(SPENT , VALUE2, VALUE2, 0          , DIRTY|FRESH, DIRTY      );
     CheckWriteCoins(SPENT , VALUE2, VALUE2, FRESH      , DIRTY      , DIRTY|FRESH);
@@ -879,8 +878,13 @@ BOOST_AUTO_TEST_CASE(ccoins_write)
     for (const CAmount parent_value : {ABSENT, SPENT, VALUE1})
         for (const CAmount child_value : {ABSENT, SPENT, VALUE2})
             for (const char parent_flags : parent_value == ABSENT ? ABSENT_FLAGS : FLAGS)
-                for (const char child_flags : child_value == ABSENT ? ABSENT_FLAGS : CLEAN_FLAGS)
-                    CheckWriteCoins(parent_value, child_value, parent_value, parent_flags, child_flags, parent_flags);
+                for (const char child_flags : child_value == ABSENT ? ABSENT_FLAGS : CLEAN_FLAGS) {
+                    if (child_flags == FRESH) {
+                        CheckWriteCoins(parent_value, child_value, FAIL, parent_flags, child_flags, NO_ENTRY);
+                    } else {
+                        CheckWriteCoins(parent_value, child_value, parent_value, parent_flags, child_flags, parent_flags);
+                    }
+                }
 }
 
 
