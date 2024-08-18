@@ -53,14 +53,11 @@ public:
 
     bool BatchWrite(CoinsViewCacheCursor& cursor, const uint256& hashBlock) override
     {
-        for (auto it{cursor.Begin()}; it != cursor.End(); it = cursor.NextAndMaybeErase(*it)){
-            if (it->second.IsDirty()) {
-                // Same optimization used in CCoinsViewDB is to only write dirty entries.
-                map_[it->first] = it->second.coin;
-                if (it->second.coin.IsSpent() && InsecureRandRange(3) == 0) {
-                    // Randomly delete empty entries on write.
-                    map_.erase(it->first);
-                }
+        for (auto it{cursor.Begin()}; it != cursor.End(); it = cursor.NextAndMaybeErase(*it)) {
+            map_[it->first] = it->second.coin;
+            if (it->second.coin.IsSpent() && InsecureRandRange(3) == 0) {
+                // Randomly delete empty entries on write.
+                map_.erase(it->first);
             }
         }
         if (!hashBlock.IsNull())
