@@ -194,17 +194,16 @@ std::optional<std::vector<int>> CalculatePrevHeights(
     std::vector<int> prev_heights;
     prev_heights.resize(tx.vin.size());
     for (size_t i = 0; i < tx.vin.size(); ++i) {
-        const CTxIn& txin = tx.vin[i];
-        Coin coin;
-        if (!coins.GetCoin(txin.prevout, coin)) {
-            LogPrintf("ERROR: %s: Missing input %d in transaction \'%s\'\n", __func__, i, tx.GetHash().GetHex());
-            return std::nullopt;
-        }
-        if (coin.nHeight == MEMPOOL_HEIGHT) {
-            // Assume all mempool transaction confirm in the next block.
-            prev_heights[i] = tip.nHeight + 1;
+        if (auto coin = coins.GetCoin(tx.vin[i].prevout); coin && !coin->IsSpent()) {
+            if (coin->nHeight == MEMPOOL_HEIGHT) {
+                // Assume all mempool transactions confirm in the next block.
+                prev_heights[i] = tip.nHeight + 1;
+            } else {
+                prev_heights[i] = coin->nHeight;
+            }
         } else {
-            prev_heights[i] = coin.nHeight;
+            LogPrintf("ERROR: %s: Missing input %d in transaction '%s'\n", __func__, i, tx.GetHash().GetHex());
+            return std::nullopt;
         }
     }
     return prev_heights;

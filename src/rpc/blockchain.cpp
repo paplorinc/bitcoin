@@ -1122,13 +1122,11 @@ static RPCHelpMan gettxout()
         const CTxMemPool& mempool = EnsureMemPool(node);
         LOCK(mempool.cs);
         CCoinsViewMemPool view(coins_view, mempool);
-        if (!view.GetCoin(out, coin) || mempool.isSpent(out)) {
+        if (!view.HaveCoin(out) || mempool.isSpent(out)) {
             return UniValue::VNULL;
         }
-    } else {
-        if (!coins_view->GetCoin(out, coin)) {
-            return UniValue::VNULL;
-        }
+    } else if (!coins_view->HaveCoin(out)) {
+        return UniValue::VNULL;
     }
 
     const CBlockIndex* pindex = active_chainstate.m_blockman.LookupBlockIndex(coins_view->GetBestBlock());

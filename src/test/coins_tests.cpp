@@ -39,14 +39,13 @@ class CCoinsViewTest : public CCoinsView
     std::map<COutPoint, Coin> map_;
 
 public:
-    [[nodiscard]] bool GetCoin(const COutPoint& outpoint, Coin& coin) const override
+    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override
     {
-        std::map<COutPoint, Coin>::const_iterator it = map_.find(outpoint);
-        if (it == map_.end()) {
-            return false;
+        if (auto it = map_.find(outpoint); it != map_.end()) {
+            return it->second;
+        } else {
+            return std::nullopt;
         }
-        coin = it->second;
-        return !coin.IsSpent();
     }
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }
