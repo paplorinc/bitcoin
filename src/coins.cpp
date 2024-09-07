@@ -45,22 +45,24 @@ size_t CCoinsViewCache::DynamicMemoryUsage() const {
 CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const {
     const auto [ret, inserted] = cacheCoins.try_emplace(outpoint);
     if (inserted) {
-        if (!base->GetCoin(outpoint, ret->second.coin)) {
+        if (auto coin{base->GetCoin(outpoint, ret->second.coin)}) {
+            if (coin->IsSpent()) {
+                // The parent only has an empty entry for this outpoint; we can consider our version as fresh.
+                ret->second.AddFlags(CCoinsCacheEntry::FRESH, *ret, m_sentinel);
+            }
+            cachedCoinsUsage += coin->DynamicMemoryUsage();
+            ret->second.coin = std::move(*coin);
+        } else {
             cacheCoins.erase(ret);
             return cacheCoins.end();
         }
-        if (ret->second.coin.IsSpent()) {
-            // The parent only has an empty entry for this outpoint; we can consider our version as fresh.
-            ret->second.AddFlags(CCoinsCacheEntry::FRESH, *ret, m_sentinel);
-        }
-        cachedCoinsUsage += ret->second.coin.DynamicMemoryUsage();
     }
     return ret;
 }
 
-std::optional<Coin> CCoinsViewCache::GetCoin(const COutPoint &outpoint, Coin &coin) const {
-    CCoinsMap::const_iterator it = FetchCoin(outpoint);
-    if (it != cacheCoins.end()) {
+std::optional<Coin> CCoinsViewCache::GetCoin(const COutPoint& outpoint, Coin& coin) const
+{
+    if (auto it{FetchCoin(outpoint)}; it != cacheCoins.end()) {
         coin = it->second.coin;
         if (!coin.IsSpent()) return coin;
     }

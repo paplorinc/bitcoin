@@ -46,16 +46,16 @@ public:
 
     std::optional<Coin> GetCoin(const COutPoint& outpoint, Coin& coin) const override
     {
-        std::map<COutPoint, Coin>::const_iterator it = map_.find(outpoint);
-        if (it == map_.end()) {
-            return std::nullopt;
+        if (auto it{map_.find(outpoint)}; it != map_.end()) {
+            coin = it->second;
+            if (!coin.IsSpent() || m_rng.randbool()) {
+                return coin; // TODO spent coins shouldn't be returned
+            } else {
+                // Randomly return std::nullopt in case of an empty entry.
+                return std::nullopt;
+            }
         }
-        coin = it->second;
-        if (coin.IsSpent() && m_rng.randbool() == 0) {
-            // Randomly return std::nullopt in case of an empty entry.
-            return std::nullopt;
-        }
-        return coin;
+        return std::nullopt;
     }
 
     uint256 GetBestBlock() const override { return hashBestBlock_; }

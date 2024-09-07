@@ -450,11 +450,11 @@ std::pair<CMutableTransaction, CAmount> TestChain100Setup::CreateValidTransactio
     std::map<COutPoint, Coin> input_coins;
     CAmount inputs_amount{0};
     for (const auto& outpoint_to_spend : inputs) {
-        // - Use GetCoin to properly populate utxo_to_spend,
+        // Use GetCoin to properly populate utxo_to_spend
         Coin utxo_to_spend;
-        assert(coins_cache.GetCoin(outpoint_to_spend, utxo_to_spend));
-        input_coins.insert({outpoint_to_spend, utxo_to_spend});
-        inputs_amount += utxo_to_spend.out.nValue;
+        auto coin{coins_cache.GetCoin(outpoint_to_spend, utxo_to_spend).value()};
+        input_coins.insert({outpoint_to_spend, coin});
+        inputs_amount += coin.out.nValue;
     }
     // - Default signature hashing type
     int nHashType = SIGHASH_ALL;

@@ -180,17 +180,17 @@ std::optional<std::vector<int>> CalculatePrevHeights(
     std::vector<int> prev_heights;
     prev_heights.resize(tx.vin.size());
     for (size_t i = 0; i < tx.vin.size(); ++i) {
-        const CTxIn& txin = tx.vin[i];
         Coin coin;
-        if (!coins.GetCoin(txin.prevout, coin)) {
+        if (auto c{coins.GetCoin(tx.vin[i].prevout, coin)}) {
+            if (c->nHeight == MEMPOOL_HEIGHT) {
+                // Assume all mempool transaction confirm in the next block.
+                prev_heights[i] = tip.nHeight + 1;
+            } else {
+                prev_heights[i] = c->nHeight;
+            }
+        } else {
             LogPrintf("ERROR: %s: Missing input %d in transaction \'%s\'\n", __func__, i, tx.GetHash().GetHex());
             return std::nullopt;
-        }
-        if (coin.nHeight == MEMPOOL_HEIGHT) {
-            // Assume all mempool transaction confirm in the next block.
-            prev_heights[i] = tip.nHeight + 1;
-        } else {
-            prev_heights[i] = coin.nHeight;
         }
     }
     return prev_heights;
