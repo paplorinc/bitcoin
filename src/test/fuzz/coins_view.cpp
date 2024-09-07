@@ -162,8 +162,7 @@ FUZZ_TARGET(coins_view, .init = initialize_coins_view)
         const bool exists_using_access_coin = !(coin_using_access_coin == EMPTY_COIN);
         const bool exists_using_have_coin = coins_view_cache.HaveCoin(random_out_point);
         const bool exists_using_have_coin_in_cache = coins_view_cache.HaveCoinInCache(random_out_point);
-        Coin coin_using_get_coin;
-        if (auto coin{coins_view_cache.GetCoin(random_out_point, coin_using_get_coin)}; coin && !coin->IsSpent()) {
+        if (auto coin{coins_view_cache.GetCoin(random_out_point)}; coin && !coin->IsSpent()) {
             assert(*coin == coin_using_access_coin);
             assert(exists_using_access_coin && exists_using_have_coin_in_cache && exists_using_have_coin);
         } else {
@@ -174,8 +173,7 @@ FUZZ_TARGET(coins_view, .init = initialize_coins_view)
         if (!coin_using_access_coin.IsSpent() && exists_using_have_coin_in_backend) {
             assert(exists_using_have_coin);
         }
-        Coin coin_using_backend_get_coin;
-        if (auto coin{backend_coins_view.GetCoin(random_out_point, coin_using_backend_get_coin)}; coin && !coin->IsSpent()) {
+        if (auto coin{backend_coins_view.GetCoin(random_out_point)}; coin && !coin->IsSpent()) {
             assert(exists_using_have_coin_in_backend);
             // Note we can't assert that `coin_using_get_coin == *coin` because the coin in
             // the cache may have been modified but not yet flushed.

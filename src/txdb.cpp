@@ -65,9 +65,9 @@ void CCoinsViewDB::ResizeCache(size_t new_cache_size)
     }
 }
 
-std::optional<Coin> CCoinsViewDB::GetCoin(const COutPoint& outpoint, Coin& coin) const
+std::optional<Coin> CCoinsViewDB::GetCoin(const COutPoint& outpoint) const
 {
-    if (m_db->Read(CoinEntry(&outpoint), coin)) return coin;
+    if (Coin coin; m_db->Read(CoinEntry(&outpoint), coin)) return coin;
     else return std::nullopt;
 }
 
