@@ -147,7 +147,7 @@ class CoinsViewBottom final : public CCoinsView
     std::map<COutPoint, Coin> m_data;
 
 public:
-    bool GetCoin(const COutPoint& outpoint, Coin& coin) const final
+    std::optional<Coin> GetCoin(const COutPoint& outpoint, Coin& coin) const final
     {
         auto it = m_data.find(outpoint);
         if (it == m_data.end()) {
@@ -462,7 +462,7 @@ FUZZ_TARGET(coinscache_sim)
     // Compare the bottom coinsview (not a CCoinsViewCache) with sim_cache[0].
     for (uint32_t outpointidx = 0; outpointidx < NUM_OUTPOINTS; ++outpointidx) {
         Coin realcoin;
-        bool real = bottom.GetCoin(data.outpoints[outpointidx], realcoin);
+        auto real = bottom.GetCoin(data.outpoints[outpointidx], realcoin);
         auto sim = lookup(outpointidx, 0);
         if (!sim.has_value()) {
             assert(!real || realcoin.IsSpent());
