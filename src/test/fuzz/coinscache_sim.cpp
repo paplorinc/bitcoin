@@ -151,10 +151,6 @@ public:
     {
         auto it = m_data.find(outpoint);
         if (it == m_data.end()) {
-            if ((outpoint.n % 5) == 3) {
-                coin.Clear();
-                return true;
-            }
             return false;
         } else {
             coin = it->second;
