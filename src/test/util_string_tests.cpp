@@ -65,7 +65,8 @@ BOOST_AUTO_TEST_CASE(ConstevalFormatString_Spec)
 
     HasReason err_term{"Format specifier incorrectly terminated by end of string!"};
     BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%", -1), const char*, err_term);
-    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%1$", -1), const char*, err_term);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%1", -1), const char*, err_term);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%1$", 1), const char*, err_term);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
