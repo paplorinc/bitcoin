@@ -11,75 +11,61 @@ using namespace util;
 
 BOOST_AUTO_TEST_SUITE(util_string_tests)
 
-// Helper to allow compile-time sanity checks while providing the number of
-// args directly. Normally PassFmt<sizeof...(Args)> would be used.
-template <unsigned NumArgs>
-inline void PassFmt(util::ConstevalFormatString<NumArgs> fmt)
+BOOST_AUTO_TEST_CASE(ConstevalFormatString_Spec)
 {
-    // This was already executed at compile-time, but is executed again at run-time to avoid -Wunused.
-    decltype(fmt)::Detail_CheckNumFormatSpecifiers(fmt.fmt);
-}
-template <unsigned WrongNumArgs>
-inline void FailFmtWithError(std::string_view wrong_fmt, std::string_view error)
-{
-    BOOST_CHECK_EXCEPTION(util::ConstevalFormatString<WrongNumArgs>::Detail_CheckNumFormatSpecifiers(wrong_fmt), const char*, HasReason(error));
-}
-
-BOOST_AUTO_TEST_CASE(ConstevalFormatString_NumSpec)
-{
-    PassFmt<0>("");
-    PassFmt<0>("%%");
-    PassFmt<1>("%s");
-    PassFmt<0>("%%s");
-    PassFmt<0>("s%%");
-    PassFmt<1>("%%%s");
-    PassFmt<1>("%s%%");
-    PassFmt<0>(" 1$s");
-    PassFmt<1>("%1$s");
-    PassFmt<1>("%1$s%1$s");
-    PassFmt<2>("%2$s");
-    PassFmt<2>("%2$s 4$s %2$s");
-    PassFmt<129>("%129$s 999$s %2$s");
-    PassFmt<1>("%02d");
-    PassFmt<1>("%+2s");
-    PassFmt<1>("%.6i");
-    PassFmt<1>("%5.2f");
-    PassFmt<1>("%#x");
-    PassFmt<1>("%1$5i");
-    PassFmt<1>("%1$-5i");
-    PassFmt<1>("%1$.5i");
+    CheckFormatSpecifiers("", 0);
+    CheckFormatSpecifiers("%%", 0);
+    CheckFormatSpecifiers("%s", 1);
+    CheckFormatSpecifiers("%%s", 0);
+    CheckFormatSpecifiers("s%%", 0);
+    CheckFormatSpecifiers("%%%s", 1);
+    CheckFormatSpecifiers("%s%%", 1);
+    CheckFormatSpecifiers(" 1$s", 0);
+    CheckFormatSpecifiers("%1$s", 1);
+    CheckFormatSpecifiers("%1$s%1$s", 1);
+    CheckFormatSpecifiers("%2$s", 2);
+    CheckFormatSpecifiers("%2$s 4$s %2$s", 2);
+    CheckFormatSpecifiers("%129$s 999$s %2$s", 129);
+    CheckFormatSpecifiers("%02d", 1);
+    CheckFormatSpecifiers("%+2s", 1);
+    CheckFormatSpecifiers("%.6i", 1);
+    CheckFormatSpecifiers("%5.2f", 1);
+    CheckFormatSpecifiers("%#x", 1);
+    CheckFormatSpecifiers("%1$5i", 1);
+    CheckFormatSpecifiers("%1$-5i", 1);
+    CheckFormatSpecifiers("%1$.5i", 1);
     // tinyformat accepts almost any "type" spec, even '%', or '_', or '\n'.
-    PassFmt<1>("%123%");
-    PassFmt<1>("%123%s");
-    PassFmt<1>("%_");
-    PassFmt<1>("%\n");
+    CheckFormatSpecifiers("%123%", 1);
+    CheckFormatSpecifiers("%123%s", 1);
+    CheckFormatSpecifiers("%_", 1);
+    CheckFormatSpecifiers("%\n", 1);
 
     // The `*` specifier behavior is unsupported and can lead to runtime
     // errors when used in a ConstevalFormatString. Please refer to the
     // note in the ConstevalFormatString docs.
-    PassFmt<1>("%*c");
-    PassFmt<2>("%2$*3$d");
-    PassFmt<1>("%.*f");
+    CheckFormatSpecifiers("%*c", 1);
+    CheckFormatSpecifiers("%2$*3$d", 2);
+    CheckFormatSpecifiers("%.*f", 1);
 
-    auto err_mix{"Format specifiers must be all positional or all non-positional!"};
-    FailFmtWithError<1>("%s%1$s", err_mix);
+    HasReason err_mix{"Format specifiers must be all positional or all non-positional!"};
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%s%1$s", 1), const char*, err_mix);
 
-    auto err_num{"Format specifier count must match the argument count!"};
-    FailFmtWithError<1>("", err_num);
-    FailFmtWithError<0>("%s", err_num);
-    FailFmtWithError<2>("%s", err_num);
-    FailFmtWithError<0>("%1$s", err_num);
-    FailFmtWithError<2>("%1$s", err_num);
+    HasReason err_num{"Format specifier count must match the argument count!"};
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("", 1), const char*, err_num);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%s", 0), const char*, err_num);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%s", 2), const char*, err_num);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%1$s", 0), const char*, err_num);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%1$s", 2), const char*, err_num);
 
-    auto err_0_pos{"Positional format specifier must have position of at least 1"};
-    FailFmtWithError<1>("%$s", err_0_pos);
-    FailFmtWithError<1>("%$", err_0_pos);
-    FailFmtWithError<0>("%0$", err_0_pos);
-    FailFmtWithError<0>("%0$s", err_0_pos);
+    HasReason err_0_pos{"Positional format specifier must have position of at least 1"};
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%$s", -1), const char*, err_0_pos);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%$", -1), const char*, err_0_pos);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%0$", -1), const char*, err_0_pos);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%0$s", -1), const char*, err_0_pos);
 
-    auto err_term{"Format specifier incorrectly terminated by end of string"};
-    FailFmtWithError<1>("%", err_term);
-    FailFmtWithError<1>("%1$", err_term);
+    HasReason err_term{"Format specifier incorrectly terminated by end of string"};
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%", -1), const char*, err_term);
+    BOOST_CHECK_EXCEPTION(CheckFormatSpecifiers("%1$", -1), const char*, err_term);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
