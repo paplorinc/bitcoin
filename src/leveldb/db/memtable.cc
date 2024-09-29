@@ -78,6 +78,7 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
   // Format of an entry is concatenation of:
   //  key_size     : varint32 of internal_key.size()
   //  key bytes    : char[internal_key.size()]
+  //  tag          : uint64((sequence << 8) | type)
   //  value_size   : varint32 of value.size()
   //  value bytes  : char[value.size()]
   size_t key_size = key.size();
@@ -88,12 +89,12 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
                              val_size;
   char* buf = arena_.Allocate(encoded_len);
   char* p = EncodeVarint32(buf, internal_key_size);
-  memcpy(p, key.data(), key_size);
+  std::memcpy(p, key.data(), key_size);
   p += key_size;
   EncodeFixed64(p, (s << 8) | type);
   p += 8;
   p = EncodeVarint32(p, val_size);
-  memcpy(p, value.data(), val_size);
+  std::memcpy(p, value.data(), val_size);
   assert(p + val_size == buf + encoded_len);
   table_.Insert(buf);
 }

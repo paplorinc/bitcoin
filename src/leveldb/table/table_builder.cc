@@ -4,7 +4,7 @@
 
 #include "leveldb/table_builder.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
@@ -162,6 +162,21 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
         block_contents = *compressed;
       } else {
         // Snappy not supported, or compressed less than 12.5%, so just
+        // store uncompressed form
+        block_contents = raw;
+        type = kNoCompression;
+      }
+      break;
+    }
+
+    case kZstdCompression: {
+      std::string* compressed = &r->compressed_output;
+      if (port::Zstd_Compress(r->options.zstd_compression_level, raw.data(),
+                              raw.size(), compressed) &&
+          compressed->size() < raw.size() - (raw.size() / 8u)) {
+        block_contents = *compressed;
+      } else {
+        // Zstd not supported, or compressed less than 12.5%, so just
         // store uncompressed form
         block_contents = raw;
         type = kNoCompression;
