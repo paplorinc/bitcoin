@@ -7,18 +7,19 @@
 #include <map>
 #include <string>
 
+#include "gtest/gtest.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
+#include "leveldb/options.h"
 #include "leveldb/table_builder.h"
 #include "table/block.h"
 #include "table/block_builder.h"
 #include "table/format.h"
 #include "util/random.h"
-#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -102,7 +103,6 @@ class StringSink : public WritableFile {
     return Status::OK();
   }
 
-  std::string GetName() const override { return ""; }
  private:
   std::string contents_;
 };
@@ -124,12 +124,11 @@ class StringSource : public RandomAccessFile {
     if (offset + n > contents_.size()) {
       n = contents_.size() - offset;
     }
-    memcpy(scratch, &contents_[offset], n);
+    std::memcpy(scratch, &contents_[offset], n);
     *result = Slice(scratch, n);
     return Status::OK();
   }
 
-  std::string GetName() const { return ""; }
  private:
   std::string contents_;
 };
@@ -221,12 +220,12 @@ class TableConstructor : public Constructor {
 
     for (const auto& kvp : data) {
       builder.Add(kvp.first, kvp.second);
-      ASSERT_TRUE(builder.status().ok());
+      EXPECT_LEVELDB_OK(builder.status());
     }
     Status s = builder.Finish();
-    ASSERT_TRUE(s.ok()) << s.ToString();
+    EXPECT_LEVELDB_OK(s);
 
-    ASSERT_EQ(sink.contents().size(), builder.FileSize());
+    EXPECT_EQ(sink.contents().size(), builder.FileSize());
 
     // Open the table
     source_ = new StringSource(sink.contents());
@@ -342,7 +341,7 @@ class DBConstructor : public Constructor {
     for (const auto& kvp : data) {
       WriteBatch batch;
       batch.Put(kvp.first, kvp.second);
-      ASSERT_TRUE(db_->Write(WriteOptions(), &batch).ok());
+      EXPECT_TRUE(db_->Write(WriteOptions(), &batch).ok());
     }
     return Status::OK();
   }
@@ -354,7 +353,7 @@ class DBConstructor : public Constructor {
 
  private:
   void NewDB() {
-    std::string name = test::TmpDir() + "/table_testdb";
+    std::string name = testing::TempDir() + "table_testdb";
 
     Options options;
     options.comparator = comparator_;
@@ -405,7 +404,7 @@ static const TestArgs kTestArgList[] = {
 };
 static const int kNumTestArgs = sizeof(kTestArgList) / sizeof(kTestArgList[0]);
 
-class Harness {
+class Harness : public testing::Test {
  public:
   Harness() : constructor_(nullptr) {}
 
@@ -487,13 +486,13 @@ class Harness {
     Iterator* iter = constructor_->NewIterator();
     ASSERT_TRUE(!iter->Valid());
     KVMap::const_iterator model_iter = data.begin();
-    if (kVerbose) fprintf(stderr, "---\n");
+    if (kVerbose) std::fprintf(stderr, "---\n");
     for (int i = 0; i < 200; i++) {
       const int toss = rnd->Uniform(5);
       switch (toss) {
         case 0: {
           if (iter->Valid()) {
-            if (kVerbose) fprintf(stderr, "Next\n");
+            if (kVerbose) std::fprintf(stderr, "Next\n");
             iter->Next();
             ++model_iter;
             ASSERT_EQ(ToString(data, model_iter), ToString(iter));
@@ -502,7 +501,7 @@ class Harness {
         }
 
         case 1: {
-          if (kVerbose) fprintf(stderr, "SeekToFirst\n");
+          if (kVerbose) std::fprintf(stderr, "SeekToFirst\n");
           iter->SeekToFirst();
           model_iter = data.begin();
           ASSERT_EQ(ToString(data, model_iter), ToString(iter));
@@ -513,7 +512,7 @@ class Harness {
           std::string key = PickRandomKey(rnd, keys);
           model_iter = data.lower_bound(key);
           if (kVerbose)
-            fprintf(stderr, "Seek '%s'\n", EscapeString(key).c_str());
+            std::fprintf(stderr, "Seek '%s'\n", EscapeString(key).c_str());
           iter->Seek(Slice(key));
           ASSERT_EQ(ToString(data, model_iter), ToString(iter));
           break;
@@ -521,7 +520,7 @@ class Harness {
 
         case 3: {
           if (iter->Valid()) {
-            if (kVerbose) fprintf(stderr, "Prev\n");
+            if (kVerbose) std::fprintf(stderr, "Prev\n");
             iter->Prev();
             if (model_iter == data.begin()) {
               model_iter = data.end();  // Wrap around to invalid value
@@ -534,7 +533,7 @@ class Harness {
         }
 
         case 4: {
-          if (kVerbose) fprintf(stderr, "SeekToLast\n");
+          if (kVerbose) std::fprintf(stderr, "SeekToLast\n");
           iter->SeekToLast();
           if (keys.empty()) {
             model_iter = data.end();
@@ -611,7 +610,7 @@ class Harness {
 };
 
 // Test empty table/block.
-TEST(Harness, Empty) {
+TEST_F(Harness, Empty) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 1);
@@ -622,7 +621,7 @@ TEST(Harness, Empty) {
 // Special test for a block with no restart entries.  The C++ leveldb
 // code never generates such blocks, but the Java version of leveldb
 // seems to.
-TEST(Harness, ZeroRestartPointsInBlock) {
+TEST_F(Harness, ZeroRestartPointsInBlock) {
   char data[sizeof(uint32_t)];
   memset(data, 0, sizeof(data));
   BlockContents contents;
@@ -641,7 +640,7 @@ TEST(Harness, ZeroRestartPointsInBlock) {
 }
 
 // Test the empty key
-TEST(Harness, SimpleEmptyKey) {
+TEST_F(Harness, SimpleEmptyKey) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 1);
@@ -650,7 +649,7 @@ TEST(Harness, SimpleEmptyKey) {
   }
 }
 
-TEST(Harness, SimpleSingle) {
+TEST_F(Harness, SimpleSingle) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 2);
@@ -659,7 +658,7 @@ TEST(Harness, SimpleSingle) {
   }
 }
 
-TEST(Harness, SimpleMulti) {
+TEST_F(Harness, SimpleMulti) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 3);
@@ -670,7 +669,7 @@ TEST(Harness, SimpleMulti) {
   }
 }
 
-TEST(Harness, SimpleSpecialKey) {
+TEST_F(Harness, SimpleSpecialKey) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 4);
@@ -679,15 +678,15 @@ TEST(Harness, SimpleSpecialKey) {
   }
 }
 
-TEST(Harness, Randomized) {
+TEST_F(Harness, Randomized) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 5);
     for (int num_entries = 0; num_entries < 2000;
          num_entries += (num_entries < 50 ? 1 : 200)) {
       if ((num_entries % 10) == 0) {
-        fprintf(stderr, "case %d of %d: num_entries = %d\n", (i + 1),
-                int(kNumTestArgs), num_entries);
+        std::fprintf(stderr, "case %d of %d: num_entries = %d\n", (i + 1),
+                     int(kNumTestArgs), num_entries);
       }
       for (int e = 0; e < num_entries; e++) {
         std::string v;
@@ -699,7 +698,7 @@ TEST(Harness, Randomized) {
   }
 }
 
-TEST(Harness, RandomizedLongDB) {
+TEST_F(Harness, RandomizedLongDB) {
   Random rnd(test::RandomSeed());
   TestArgs args = {DB_TEST, false, 16};
   Init(args);
@@ -716,14 +715,12 @@ TEST(Harness, RandomizedLongDB) {
   for (int level = 0; level < config::kNumLevels; level++) {
     std::string value;
     char name[100];
-    snprintf(name, sizeof(name), "leveldb.num-files-at-level%d", level);
+    std::snprintf(name, sizeof(name), "leveldb.num-files-at-level%d", level);
     ASSERT_TRUE(db()->GetProperty(name, &value));
     files += atoi(value.c_str());
   }
   ASSERT_GT(files, 0);
 }
-
-class MemTableTest {};
 
 TEST(MemTableTest, Simple) {
   InternalKeyComparator cmp(BytewiseComparator());
@@ -740,8 +737,8 @@ TEST(MemTableTest, Simple) {
   Iterator* iter = memtable->NewIterator();
   iter->SeekToFirst();
   while (iter->Valid()) {
-    fprintf(stderr, "key: '%s' -> '%s'\n", iter->key().ToString().c_str(),
-            iter->value().ToString().c_str());
+    std::fprintf(stderr, "key: '%s' -> '%s'\n", iter->key().ToString().c_str(),
+                 iter->value().ToString().c_str());
     iter->Next();
   }
 
@@ -752,14 +749,12 @@ TEST(MemTableTest, Simple) {
 static bool Between(uint64_t val, uint64_t low, uint64_t high) {
   bool result = (val >= low) && (val <= high);
   if (!result) {
-    fprintf(stderr, "Value %llu is not in range [%llu, %llu]\n",
-            (unsigned long long)(val), (unsigned long long)(low),
-            (unsigned long long)(high));
+    std::fprintf(stderr, "Value %llu is not in range [%llu, %llu]\n",
+                 (unsigned long long)(val), (unsigned long long)(low),
+                 (unsigned long long)(high));
   }
   return result;
 }
-
-class TableTest {};
 
 TEST(TableTest, ApproximateOffsetOfPlain) {
   TableConstructor c(BytewiseComparator());
@@ -790,16 +785,28 @@ TEST(TableTest, ApproximateOffsetOfPlain) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 610000, 612000));
 }
 
-static bool SnappyCompressionSupported() {
+static bool CompressionSupported(CompressionType type) {
   std::string out;
   Slice in = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  return port::Snappy_Compress(in.data(), in.size(), &out);
+  if (type == kSnappyCompression) {
+    return port::Snappy_Compress(in.data(), in.size(), &out);
+  } else if (type == kZstdCompression) {
+    return port::Zstd_Compress(/*level=*/1, in.data(), in.size(), &out);
+  }
+  return false;
 }
 
-TEST(TableTest, ApproximateOffsetOfCompressed) {
-  if (!SnappyCompressionSupported()) {
-    fprintf(stderr, "skipping compression tests\n");
-    return;
+class CompressionTableTest
+    : public ::testing::TestWithParam<std::tuple<CompressionType>> {};
+
+INSTANTIATE_TEST_SUITE_P(CompressionTests, CompressionTableTest,
+                         ::testing::Values(kSnappyCompression,
+                                           kZstdCompression));
+
+TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
+  CompressionType type = ::testing::get<0>(GetParam());
+  if (!CompressionSupported(type)) {
+    GTEST_SKIP() << "skipping compression test: " << type;
   }
 
   Random rnd(301);
@@ -813,7 +820,7 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   KVMap kvmap;
   Options options;
   options.block_size = 1024;
-  options.compression = kSnappyCompression;
+  options.compression = type;
   c.Finish(options, &keys, &kvmap);
 
   // Expected upper and lower bounds of space used by compressible strings.
@@ -833,5 +840,3 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

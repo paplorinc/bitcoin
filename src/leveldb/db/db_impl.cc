@@ -4,11 +4,10 @@
 
 #include "db/db_impl.h"
 
-#include <stdint.h>
-#include <stdio.h>
-
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
+#include <cstdio>
 #include <set>
 #include <string>
 #include <vector>
@@ -198,6 +197,9 @@ Status DBImpl::NewDB() {
     new_db.EncodeTo(&record);
     s = log.AddRecord(record);
     if (s.ok()) {
+      s = file->Sync();
+    }
+    if (s.ok()) {
       s = file->Close();
     }
   }
@@ -206,7 +208,7 @@ Status DBImpl::NewDB() {
     // Make "CURRENT" file that points to the new manifest file.
     s = SetCurrentFile(env_, dbname_, 1);
   } else {
-    env_->DeleteFile(manifest);
+    env_->RemoveFile(manifest);
   }
   return s;
 }
@@ -220,7 +222,7 @@ void DBImpl::MaybeIgnoreError(Status* s) const {
   }
 }
 
-void DBImpl::DeleteObsoleteFiles() {
+void DBImpl::RemoveObsoleteFiles() {
   mutex_.AssertHeld();
 
   if (!bg_error_.ok()) {
@@ -282,7 +284,7 @@ void DBImpl::DeleteObsoleteFiles() {
   // are therefore safe to delete while allowing other threads to proceed.
   mutex_.Unlock();
   for (const std::string& filename : files_to_delete) {
-    env_->DeleteFile(dbname_ + "/" + filename);
+    env_->RemoveFile(dbname_ + "/" + filename);
   }
   mutex_.Lock();
 }
@@ -302,6 +304,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
 
   if (!env_->FileExists(CurrentFileName(dbname_))) {
     if (options_.create_if_missing) {
+      Log(options_.info_log, "Creating DB %s since it was missing.",
+          dbname_.c_str());
       s = NewDB();
       if (!s.ok()) {
         return s;
@@ -351,8 +355,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   }
   if (!expected.empty()) {
     char buf[50];
-    snprintf(buf, sizeof(buf), "%d missing files; e.g.",
-             static_cast<int>(expected.size()));
+    std::snprintf(buf, sizeof(buf), "%d missing files; e.g.",
+                  static_cast<int>(expected.size()));
     return Status::Corruption(buf, TableFileName(dbname_, *(expected.begin())));
   }
 
@@ -428,7 +432,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   while (reader.ReadRecord(&record, &scratch) && status.ok()) {
     if (record.size() < 12) {
       reporter.Corruption(record.size(),
-                          Status::Corruption("log record too small", fname));
+                          Status::Corruption("log record too small"));
       continue;
     }
     WriteBatchInternal::SetContents(&batch, record);
@@ -569,7 +573,7 @@ void DBImpl::CompactMemTable() {
     imm_->Unref();
     imm_ = nullptr;
     has_imm_.store(false, std::memory_order_release);
-    DeleteObsoleteFiles();
+    RemoveObsoleteFiles();
   } else {
     RecordBackgroundError(s);
   }
@@ -624,6 +628,11 @@ void DBImpl::TEST_CompactRange(int level, const Slice* begin,
     } else {  // Running either my compaction or another compaction.
       background_work_finished_signal_.Wait();
     }
+  }
+  // Finish current background compaction in the case where
+  // `background_work_finished_signal_` was signalled due to an error.
+  while (background_compaction_scheduled_) {
+    background_work_finished_signal_.Wait();
   }
   if (manual_compaction_ == &manual) {
     // Cancel my manual compaction since we aborted early for some reason.
@@ -729,7 +738,7 @@ void DBImpl::BackgroundCompaction() {
     // Move file to next level
     assert(c->num_input_files(0) == 1);
     FileMetaData* f = c->input(0, 0);
-    c->edit()->DeleteFile(c->level(), f->number);
+    c->edit()->RemoveFile(c->level(), f->number);
     c->edit()->AddFile(c->level() + 1, f->number, f->file_size, f->smallest,
                        f->largest);
     status = versions_->LogAndApply(c->edit(), &mutex_);
@@ -749,7 +758,7 @@ void DBImpl::BackgroundCompaction() {
     }
     CleanupCompaction(compact);
     c->ReleaseInputs();
-    DeleteObsoleteFiles();
+    RemoveObsoleteFiles();
   }
   delete c;
 
@@ -1364,8 +1373,22 @@ Status DBImpl::MakeRoomForWrite(bool force) {
         versions_->ReuseFileNumber(new_log_number);
         break;
       }
+
       delete log_;
+
+      s = logfile_->Close();
+      if (!s.ok()) {
+        // We may have lost some data written to the previous log file.
+        // Switch to the new log file anyway, but record as a background
+        // error so we do not attempt any more writes.
+        //
+        // We could perhaps attempt to save the memtable corresponding
+        // to log file and suppress the error if that works, but that
+        // would add more complexity in a critical code path.
+        RecordBackgroundError(s);
+      }
       delete logfile_;
+
       logfile_ = lfile;
       logfile_number_ = new_log_number;
       log_ = new log::Writer(lfile);
@@ -1397,26 +1420,26 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
       return false;
     } else {
       char buf[100];
-      snprintf(buf, sizeof(buf), "%d",
-               versions_->NumLevelFiles(static_cast<int>(level)));
+      std::snprintf(buf, sizeof(buf), "%d",
+                    versions_->NumLevelFiles(static_cast<int>(level)));
       *value = buf;
       return true;
     }
   } else if (in == "stats") {
     char buf[200];
-    snprintf(buf, sizeof(buf),
-             "                               Compactions\n"
-             "Level  Files Size(MB) Time(sec) Read(MB) Write(MB)\n"
-             "--------------------------------------------------\n");
+    std::snprintf(buf, sizeof(buf),
+                  "                               Compactions\n"
+                  "Level  Files Size(MB) Time(sec) Read(MB) Write(MB)\n"
+                  "--------------------------------------------------\n");
     value->append(buf);
     for (int level = 0; level < config::kNumLevels; level++) {
       int files = versions_->NumLevelFiles(level);
       if (stats_[level].micros > 0 || files > 0) {
-        snprintf(buf, sizeof(buf), "%3d %8d %8.0f %9.0f %8.0f %9.0f\n", level,
-                 files, versions_->NumLevelBytes(level) / 1048576.0,
-                 stats_[level].micros / 1e6,
-                 stats_[level].bytes_read / 1048576.0,
-                 stats_[level].bytes_written / 1048576.0);
+        std::snprintf(buf, sizeof(buf), "%3d %8d %8.0f %9.0f %8.0f %9.0f\n",
+                      level, files, versions_->NumLevelBytes(level) / 1048576.0,
+                      stats_[level].micros / 1e6,
+                      stats_[level].bytes_read / 1048576.0,
+                      stats_[level].bytes_written / 1048576.0);
         value->append(buf);
       }
     }
@@ -1433,8 +1456,8 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
       total_usage += imm_->ApproximateMemoryUsage();
     }
     char buf[50];
-    snprintf(buf, sizeof(buf), "%llu",
-             static_cast<unsigned long long>(total_usage));
+    std::snprintf(buf, sizeof(buf), "%llu",
+                  static_cast<unsigned long long>(total_usage));
     value->append(buf);
     return true;
   }
@@ -1506,7 +1529,7 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
     s = impl->versions_->LogAndApply(&edit, &impl->mutex_);
   }
   if (s.ok()) {
-    impl->DeleteObsoleteFiles();
+    impl->RemoveObsoleteFiles();
     impl->MaybeScheduleCompaction();
   }
   impl->mutex_.Unlock();
@@ -1539,15 +1562,15 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
     for (size_t i = 0; i < filenames.size(); i++) {
       if (ParseFileName(filenames[i], &number, &type) &&
           type != kDBLockFile) {  // Lock file will be deleted at end
-        Status del = env->DeleteFile(dbname + "/" + filenames[i]);
+        Status del = env->RemoveFile(dbname + "/" + filenames[i]);
         if (result.ok() && !del.ok()) {
           result = del;
         }
       }
     }
     env->UnlockFile(lock);  // Ignore error since state is already gone
-    env->DeleteFile(lockname);
-    env->DeleteDir(dbname);  // Ignore error in case dir contains other files
+    env->RemoveFile(lockname);
+    env->RemoveDir(dbname);  // Ignore error in case dir contains other files
   }
   return result;
 }
