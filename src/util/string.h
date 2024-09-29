@@ -25,12 +25,6 @@ namespace util {
  * strings, to reduce the likelihood of tinyformat throwing exceptions at
  * run-time. Validation is partial to try and prevent the most common errors
  * while avoiding re-implementing the entire parsing logic.
- *
- * @note Counting of `*` dynamic width and precision fields (such as `%*c`,
- * `%2$*3$d`, `%.*f`) is not implemented to minimize code complexity as long as
- * they are not used in the codebase. Usage of these fields is not counted and
- * can lead to run-time exceptions. Code wanting to use the `*` specifier can
- * side-step this struct and call tinyformat directly.
  */
 constexpr static void CheckFormatSpecifiers(std::string_view str, int num_params)
 {
@@ -46,6 +40,11 @@ constexpr static void CheckFormatSpecifiers(std::string_view str, int num_params
         if (*it == '%') {
             // Percent escape: %%
             ++it;
+            continue;
+        }
+        if (*it == '*' || ((*it == '_' || *it == '-') && *std::next(it) == '*')) {
+            count_normal += 2; // width + value
+            it += 2;
             continue;
         }
 
