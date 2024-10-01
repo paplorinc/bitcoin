@@ -82,6 +82,7 @@ target_link_libraries(bitcoinkernel
     core_interface
     bitcoin_clientversion
     bitcoin_crypto
+    RocksDB::RocksDB
     secp256k1
   PUBLIC
     Boost::headers

@@ -131,6 +131,7 @@ target_link_libraries(bitcoinqt
   PRIVATE
     core_interface
     bitcoin_cli
+    RocksDB::RocksDB
     Boost::headers
     $<TARGET_NAME_IF_EXISTS:MiniUPnPc::MiniUPnPc>
     $<TARGET_NAME_IF_EXISTS:PkgConfig::libqrencode>

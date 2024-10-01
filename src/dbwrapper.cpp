@@ -14,6 +14,7 @@
 #include <util/strencodings.h>
 
 #include "rocksdb/db.h"
+#include "rocksdb/env.h"
 #include "rocksdb/filter_policy.h"
 #include "rocksdb/table.h"
 #include <algorithm>
