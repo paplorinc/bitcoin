@@ -147,15 +147,15 @@ static constexpr bool DEFAULT_I2P_ACCEPT_INCOMING{true};
 static constexpr bool DEFAULT_STOPAFTERBLOCKIMPORT{false};
 
 #ifdef WIN32
-// Win32 LevelDB doesn't use filedescriptors, and the ones used for
+// Win32 RocksDB doesn't use filedescriptors, and the ones used for
 // accessing block files don't count towards the fd_set size limit
 // anyway.
-#define MIN_LEVELDB_FDS 0
+#define MIN_ROCKDB_FDS 0
 #else
-#define MIN_LEVELDB_FDS 150
+#define MIN_ROCKDB_FDS 150
 #endif
 
-static constexpr int MIN_CORE_FDS = MIN_LEVELDB_FDS + NUM_FDS_MESSAGE_CAPTURE;
+static constexpr int MIN_CORE_FDS = MIN_ROCKDB_FDS + NUM_FDS_MESSAGE_CAPTURE;
 static const char* DEFAULT_ASMAP_FILENAME="ip_asn.map";
 
 /**

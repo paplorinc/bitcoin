@@ -168,7 +168,6 @@ fn get_subtrees() -> Vec<&'static str> {
     vec![
         "src/crc32c",
         "src/crypto/ctaes",
-        "src/leveldb",
         "src/minisketch",
         "src/secp256k1",
     ]

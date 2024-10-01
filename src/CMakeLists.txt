@@ -288,7 +288,7 @@ target_link_libraries(bitcoin_node
     core_interface
     bitcoin_common
     bitcoin_util
-    leveldb
+    RocksDB::RocksDB
     minisketch
     univalue
     Boost::headers

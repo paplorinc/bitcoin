@@ -741,7 +741,7 @@ and git merge commit are mentioned.
 - #9587,#8793,#9496,#8191,#8109,#8655,#8472,#8677,#8981,#9124  Avoid shadowing of variables (paveljanik)
 - #9063 `f2a6e82` Use deprecated `MAP_ANON` if `MAP_ANONYMOUS` is not defined (paveljanik)
 - #9060 `1107653` Fix bloom filter init to isEmpty = true (robmcl4)
-- #8613 `613bda4` LevelDB 1.19 (sipa)
+- #8613 `613bda4` RocksDB 1.19 (sipa)
 - #9225 `5488514` Fix some benign races (TheBlueMatt)
 - #8736 `5fa7b07` base58: Improve DecodeBase58 performance (wjx)
 - #9039 `e81df49` Various serialization simplifcations and optimizations (sipa)

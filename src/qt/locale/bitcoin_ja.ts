@@ -4404,8 +4404,8 @@ Go to File &gt; Open Wallet to load a wallet.
         <translation type="unfinished">アウトバウンド接続がi2p (-onlynet=i2p)に制限されていますが、-i2psamが設定されていません。</translation>
     </message>
     <message>
-        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate leveldb directory.</source>
-        <translation type="unfinished">「%s」-&gt;「%s」への名称変更に失敗しました。バックグラウンドでchainstate leveldbディレクトリのクリーンアップができません。</translation>
+        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate rocksdb directory.</source>
+        <translation type="unfinished">「%s」-&gt;「%s」への名称変更に失敗しました。バックグラウンドでchainstate RocksDBディレクトリのクリーンアップができません。</translation>
     </message>
     <message>
         <source>The combination of the pre-selected inputs and the wallet automatic inputs selection exceeds the transaction maximum weight. Please try sending a smaller amount or manually consolidating your wallet's UTXOs</source>

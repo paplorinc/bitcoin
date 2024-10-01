@@ -8,7 +8,7 @@
 // compiled with the appropriate compiler flags to enable ARM NEON CRC32C
 // instructions.
 
-// This implementation is based on https://github.com/google/leveldb/pull/490.
+// This implementation is based on https://github.com/google/RocksDB/pull/490.
 
 #include <cstddef>
 #include <cstdint>

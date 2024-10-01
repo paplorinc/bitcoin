@@ -4335,8 +4335,8 @@ Vai su File &gt; Apri Portafoglio per caricare un portafoglio.
         <translation type="unfinished">Le connessioni in uscita sono limitate a i2p (-onlynet=i2p), ma -i2psam non è fornito.</translation>
     </message>
     <message>
-        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate leveldb directory.</source>
-        <translation type="unfinished">Rinominazione di  '%s' -&gt; '%s' fallita. Impossibile ripulire la directory di background chainstate leveldb.</translation>
+        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate rocksdb directory.</source>
+        <translation type="unfinished">Rinominazione di  '%s' -&gt; '%s' fallita. Impossibile ripulire la directory di background chainstate rocksdb.</translation>
     </message>
     <message>
         <source>The combination of the pre-selected inputs and the wallet automatic inputs selection exceeds the transaction maximum weight. Please try sending a smaller amount or manually consolidating your wallet's UTXOs</source>

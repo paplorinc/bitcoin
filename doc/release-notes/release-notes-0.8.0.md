@@ -35,8 +35,8 @@ Mac and Windows binaries are signed with certificates owned by the Bitcoin
 Foundation, to be compatible with the new security features in OSX 10.8 and
 Windows 8.
 
-LevelDB, a fast, open-source, non-relational database from Google, is
-now used to store transaction and block indices.  LevelDB works much better
+RocksDB, a fast, open-source, non-relational database from Google, is
+now used to store transaction and block indices.  RocksDB works much better
 on machines with slow I/O and is faster in general. Berkeley DB is now only
 used for the wallet.dat file (public and private wallet keys and transactions
 relevant to you).
@@ -64,7 +64,7 @@ addresses (also known as "coin control").
 New/changed settings (command-line or bitcoin.conf file)
 --------------------------------------------------------
 
-dbcache : controls LevelDB memory usage.
+dbcache : controls RocksDB memory usage.
 
 par : controls how many threads to use to validate transactions. Defaults to the number
 of CPUs on your machine, use -par=1 to limit to a single CPU.

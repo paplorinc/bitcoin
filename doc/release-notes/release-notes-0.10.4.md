@@ -134,7 +134,7 @@ git merge commit are mentioned.
 - #6953 `612efe8` [Qt] Raise debug window when requested
 - #6953 `3ad96bd` Fix locking in GetTransaction
 - #6953 `9c81005` Fix spelling of Qt
-- #6946 `94b67e5` Update LevelDB
+- #6946 `94b67e5` Update RocksDB
 - #6706 `5dc72f8` CLTV: Add more tests to improve coverage
 - #6706 `6a1343b` Add RPC tests for the CHECKLOCKTIMEVERIFY (BIP65) soft-fork
 - #6706 `4137248` Add CHECKLOCKTIMEVERIFY (BIP65) soft-fork logic

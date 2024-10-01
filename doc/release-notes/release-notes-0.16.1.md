@@ -106,7 +106,7 @@ weights.
 - #13201 `b8aacd6` Handle disconnect_node race (sdaftuar)
 
 ### Miscellaneous
-- #12518 `a17fecf` Bump leveldb subtree (MarcoFalke)
+- #12518 `a17fecf` Bump rocksdb subtree (MarcoFalke)
 - #12442 `f3b8d85` devtools: Exclude patches from lint-whitespace (MarcoFalke)
 - #12988 `acdf433` Hold cs_main while calling UpdatedBlockTip() signal (skeees)
 - #12985 `0684cf9` Windows: Avoid launching as admin when NSIS installer ends. (JeremyRand)

@@ -84,7 +84,7 @@ This release supports running a fully validating node without maintaining a copy
 of the raw block and undo data on disk. To recap, there are four types of data 
 related to the blockchain in the bitcoin system: the raw blocks as received over 
 the network (blk???.dat), the undo data (rev???.dat), the block index and the 
-UTXO set (both LevelDB databases). The databases are built from the raw data.
+UTXO set (both RocksDB databases). The databases are built from the raw data.
 
 Block pruning allows Bitcoin Core to delete the raw block and undo data once 
 it's been validated and used to build the databases. At that point, the raw data 

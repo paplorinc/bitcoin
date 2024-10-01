@@ -31,7 +31,7 @@ Transactions with version numbers larger than 0x7fffffff were
 incorrectly being relayed and included in blocks.
 
 Blocks containing transactions with version numbers larger
-than 0x7fffffff caused the code that checks for LevelDB database
+than 0x7fffffff caused the code that checks for RocksDB database
 inconsistencies at startup to erroneously report database
 corruption and suggest that you reindex your database.
 

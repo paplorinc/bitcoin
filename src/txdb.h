@@ -30,7 +30,7 @@ static const int64_t nMinDbCache = 4;
 //! Max memory allocated to block tree DB specific cache, if no -txindex (MiB)
 static const int64_t nMaxBlockDBCache = 2;
 //! Max memory allocated to block tree DB specific cache, if -txindex (MiB)
-// Unlike for the UTXO database, for the txindex scenario the leveldb cache make
+// Unlike for the UTXO database, for the txindex scenario the rocksdb cache make
 // a meaningful difference: https://github.com/bitcoin/bitcoin/pull/8273#issuecomment-229601991
 static const int64_t nMaxTxIndexCache = 1024;
 //! Max memory allocated to all block filter index caches combined in MiB.
@@ -68,7 +68,7 @@ public:
     bool NeedsUpgrade();
     size_t EstimateSize() const override;
 
-    //! Dynamically alter the underlying leveldb cache size.
+    //! Dynamically alter the underlying rocksdb cache size.
     void ResizeCache(size_t new_cache_size) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     //! @returns filesystem path to on-disk storage or std::nullopt if in memory.

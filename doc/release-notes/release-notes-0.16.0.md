@@ -220,7 +220,7 @@ Testing changes
 - #12118 `44080a9` Sort mempool by min(feerate, ancestor_feerate) (sdaftuar)
 - #8498 `0e3a411` Minimize the number of times it is checked that no money... (jtimon)
 - #12368 `3f5012b` Hold mempool.cs for the duration of ATMP (TheBlueMatt)
-- #12401 `d44cd7e` Reset pblocktree before deleting LevelDB file (Sjors)
+- #12401 `d44cd7e` Reset pblocktree before deleting RocksDB file (Sjors)
 - #12415 `f893824` Interrupt loading thread after shutdown request (promag)
 
 ### P2P protocol and network code
@@ -582,7 +582,7 @@ Testing changes
 - #11419 `093074b` Utils: Fix launchctl not being able to stop bitcoind (OmeGak)
 - #11394 `6e4e98e` Perform a weaker subtree check in Travis (sipa)
 - #11702 `4122112` [build] Add a script for installing db4 (jamesob)
-- #11794 `dd49862` Prefix leveldb debug logging (laanwj)
+- #11794 `dd49862` Prefix rocksdb debug logging (laanwj)
 - #11781 `24df9af` Add `-debuglogfile` option (laanwj)
 - #10773 `c17f11f` Shell script cleanups (practicalswift)
 - #11829 `7630a1f` Test datadir specified in conf file exists (MeshCollider)

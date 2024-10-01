@@ -145,6 +145,8 @@ if(WITH_USDT)
   find_package(USDT MODULE REQUIRED)
 endif()
 
+find_package(RocksDB REQUIRED)
+
 cmake_dependent_option(ENABLE_EXTERNAL_SIGNER "Enable external signer support." ON "NOT WIN32" OFF)
 
 cmake_dependent_option(WITH_QRENCODE "Enable QR code support." ON "BUILD_GUI" OFF)
@@ -577,7 +579,6 @@ add_subdirectory(test)
 add_subdirectory(doc)
 
 include(cmake/crc32c.cmake)
-include(cmake/leveldb.cmake)
 include(cmake/minisketch.cmake)
 add_subdirectory(src)
 

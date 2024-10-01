@@ -135,7 +135,7 @@ target_link_libraries(fuzz
   bitcoin_common
   bitcoin_util
   minisketch
-  leveldb
+  RocksDB::RocksDB
   univalue
   secp256k1
   Boost::headers

@@ -60,15 +60,15 @@
    fun:_Z8ShutdownR11NodeContext
 }
 {
-   Suppress leveldb leak
+   Suppress rocksdb leak
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:_Znwm
    ...
-   fun:_ZN7leveldb6DBImpl14BackgroundCallEv
+   fun:_ZN7RocksDB6DBImpl14BackgroundCallEv
 }
 {
-   Suppress leveldb leak
+   Suppress rocksdb leak
    Memcheck:Leak
    fun:_Znwm
    ...
