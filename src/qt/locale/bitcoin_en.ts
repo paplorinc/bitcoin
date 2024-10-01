@@ -5785,7 +5785,7 @@ Go to File &gt; Open Wallet to load a wallet.
     </message>
     <message>
         <location line="+14"/>
-        <source>Rename of &apos;%s&apos; -&gt; &apos;%s&apos; failed. Cannot clean up the background chainstate leveldb directory.</source>
+        <source>Rename of &apos;%s&apos; -&gt; &apos;%s&apos; failed. Cannot clean up the background chainstate rocksdb directory.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

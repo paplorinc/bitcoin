@@ -58,7 +58,7 @@ distribution provides binaries for the RISC-V platform.
 - #17843 Reset reused transactions cache (fjahr)
 
 ### RPC and other APIs
-- #17687 cli: Fix fatal leveldb error when specifying -blockfilterindex=basic twice (brakmic)
+- #17687 cli: Fix fatal rocksdb error when specifying -blockfilterindex=basic twice (brakmic)
 - #17728 require second argument only for scantxoutset start action (achow101)
 - #17445 zmq: Fix due to invalid argument and multiple notifiers (promag)
 - #17524 psbt: handle unspendable psbts (achow101)

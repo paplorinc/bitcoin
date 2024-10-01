@@ -81,7 +81,7 @@ Command-line options:
 Block-chain handling and storage:
 
 - Fix for GetBlockValue() after block 13,440,000 (BIP42)
-- Upgrade leveldb to 1.17
+- Upgrade rocksdb to 1.17
 
 Protocol and network code:
 

@@ -38,7 +38,7 @@ Developer Notes
     - [Source code organization](#source-code-organization)
     - [GUI](#gui)
     - [Subtrees](#subtrees)
-    - [Upgrading LevelDB](#upgrading-leveldb)
+    - [Upgrading RocksDB](#upgrading-rocksdb)
       - [File Descriptor Counts](#file-descriptor-counts)
       - [Consensus Compatibility](#consensus-compatibility)
     - [Scripted diffs](#scripted-diffs)
@@ -1230,21 +1230,21 @@ Current subtrees include:
 - src/minisketch
   - Upstream at https://github.com/sipa/minisketch ; maintained by Core contributors.
 
-Upgrading LevelDB
+Upgrading RocksDB
 ---------------------
 
-Extra care must be taken when upgrading LevelDB. This section explains issues
+Extra care must be taken when upgrading RocksDB. This section explains issues
 you must be aware of.
 
 ### File Descriptor Counts
 
-In most configurations, we use the default LevelDB value for `max_open_files`,
-which is 1000 at the time of this writing. If LevelDB actually uses this many
+In most configurations, we use the default RocksDB value for `max_open_files`,
+which is 1000 at the time of this writing. If RocksDB actually uses this many
 file descriptors, it will cause problems with Bitcoin's `select()` loop, because
 it may cause new sockets to be created where the fd value is >= 1024. For this
-reason, on 64-bit Unix systems, we rely on an internal LevelDB optimization that
+reason, on 64-bit Unix systems, we rely on an internal RocksDB optimization that
 uses `mmap()` + `close()` to open table files without actually retaining
-references to the table file descriptors. If you are upgrading LevelDB, you must
+references to the table file descriptors. If you are upgrading RocksDB, you must
 sanity check the changes to make sure that this assumption remains valid.
 
 In addition to reviewing the upstream changes in `env_posix.cc`, you can use `lsof` to
@@ -1265,17 +1265,17 @@ details.
 
 ### Consensus Compatibility
 
-It is possible for LevelDB changes to inadvertently change consensus
-compatibility between nodes. This happened in Bitcoin 0.8 (when LevelDB was
-first introduced). When upgrading LevelDB, you should review the upstream changes
+It is possible for RocksDB changes to inadvertently change consensus
+compatibility between nodes. This happened in Bitcoin 0.8 (when RocksDB was
+first introduced). When upgrading RocksDB, you should review the upstream changes
 to check for issues affecting consensus compatibility.
 
-For example, if LevelDB had a bug that accidentally prevented a key from being
+For example, if RocksDB had a bug that accidentally prevented a key from being
 returned in an edge case, and that bug was fixed upstream, the bug "fix" would
 be an incompatible consensus change. In this situation, the correct behavior
 would be to revert the upstream fix before applying the updates to Bitcoin's
-copy of LevelDB. In general, you should be wary of any upstream changes affecting
-what data is returned from LevelDB queries.
+copy of RocksDB. In general, you should be wary of any upstream changes affecting
+what data is returned from RocksDB queries.
 
 Scripted diffs
 --------------

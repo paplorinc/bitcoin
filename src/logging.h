@@ -60,7 +60,7 @@ namespace BCLog {
         LIBEVENT    = (CategoryMask{1} << 17),
         COINDB      = (CategoryMask{1} << 18),
         QT          = (CategoryMask{1} << 19),
-        LEVELDB     = (CategoryMask{1} << 20),
+        ROCKSDB     = (CategoryMask{1} << 20),
         VALIDATION  = (CategoryMask{1} << 21),
         I2P         = (CategoryMask{1} << 22),
         IPC         = (CategoryMask{1} << 23),

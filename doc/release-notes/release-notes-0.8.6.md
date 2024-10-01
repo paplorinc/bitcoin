@@ -36,10 +36,10 @@ your machine.
   (see https://gist.github.com/gavinandresen/7670433#086-wallet)
 
 - OSX block chain database corruption fixes
-  - Update leveldb to 1.13
+  - Update rocksdb to 1.13
   - Use fcntl with `F_FULLSYNC` instead of fsync on OSX
   - Use native Darwin memory barriers
-  - Replace use of mmap in leveldb for improved reliability (only on OSX)
+  - Replace use of mmap in rocksdb for improved reliability (only on OSX)
 
 - Fix nodes forwarding transactions with empty vins and getting banned
 

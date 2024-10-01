@@ -4394,8 +4394,8 @@ Vá ao menu Ficheiro &gt; Abrir carteira para carregar uma carteira
         <translation type="unfinished">Conexões de saída restringidas ao i2p (-onlynet=i2p) mas não foi fornecido -i2psam</translation>
     </message>
     <message>
-        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate leveldb directory.</source>
-        <translation type="unfinished">Renomear de '%s' -&gt; '%s'falhou. Não é possível limpar o diretório leveldb do chainstate em segundo plano.</translation>
+        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate rocksdb directory.</source>
+        <translation type="unfinished">Renomear de '%s' -&gt; '%s'falhou. Não é possível limpar o diretório rocksdb do chainstate em segundo plano.</translation>
     </message>
     <message>
         <source>The combination of the pre-selected inputs and the wallet automatic inputs selection exceeds the transaction maximum weight. Please try sending a smaller amount or manually consolidating your wallet's UTXOs</source>

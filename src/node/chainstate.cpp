@@ -206,7 +206,7 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     //
     // Why is this cleanup done here (on subsequent restart) and not just when the
     // snapshot is actually validated? Because this entails unusual
-    // filesystem operations to move leveldb data directories around, and that seems
+    // filesystem operations to move rocksdb data directories around, and that seems
     // too risky to do in the middle of normal runtime.
     auto snapshot_completion = chainman.MaybeCompleteSnapshotValidation();
 

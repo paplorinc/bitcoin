@@ -556,7 +556,7 @@ git merge commit are mentioned.
 - #5913 `a0625b8` Add absurdly high fee message to validation state (Shaul Kfir)
 - #6177 `2f746c6` Prevent block.nTime from decreasing (Mark Friedenbach)
 - #6377 `e545371` Handle no chain tip available in InvalidChainFound() (Ross Nicoll)
-- #6551 `39ddaeb` Handle leveldb::DestroyDB() errors on wipe failure (Adam Weiss)
+- #6551 `39ddaeb` Handle rocksdb::DestroyDB() errors on wipe failure (Adam Weiss)
 - #6654 `b0ce450` Mempool package tracking (Suhas Daftuar)
 - #6715 `82d2aef` Fix mempool packages (Suhas Daftuar)
 - #6680 `4f44530` use CBlockIndex instead of uint256 for UpdatedBlockTip signal (Jonas Schnelli)

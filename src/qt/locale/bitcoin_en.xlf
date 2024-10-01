@@ -4858,7 +4858,7 @@ Go to File &gt; Open Wallet to load a wallet.
         <context-group purpose="location"><context context-type="linenumber">141</context></context-group>
       </trans-unit>
       <trans-unit id="_msg1067">
-        <source xml:space="preserve">Rename of &apos;%s&apos; -&gt; &apos;%s&apos; failed. Cannot clean up the background chainstate leveldb directory.</source>
+        <source xml:space="preserve">Rename of &apos;%s&apos; -&gt; &apos;%s&apos; failed. Cannot clean up the background chainstate rocksdb directory.</source>
         <context-group purpose="location"><context context-type="linenumber">155</context></context-group>
       </trans-unit>
       <trans-unit id="_msg1068">

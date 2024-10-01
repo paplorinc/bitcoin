@@ -68,7 +68,7 @@ and loaded as active on node startup (via `DetectSnapshotChainstate()`).
 A special file is created within that directory, `base_blockhash`, which contains the
 serialized `uint256` of the base block of the snapshot. This is used to reinitialize
 the snapshot chainstate on subsequent inits. Otherwise, the directory is a normal
-leveldb database.
+rocksdb database.
 
 |    |    |
 | ---------- | ----------- |

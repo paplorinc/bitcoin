@@ -185,7 +185,7 @@ git merge commit are mentioned.
 - #6856 `dfe55bd` Do not allow blockfile pruning during reindex.
 - #6566 `a1d3c6f` Add rules--presently disabled--for using GetMedianTimePast as end point for lock-time calculations
 - #6566 `f720c5f` Enable policy enforcing GetMedianTimePast as the end point of lock-time constraints
-- #6917 `0af5b8e` leveldb: Win32WritableFile without memory mapping
+- #6917 `0af5b8e` rocksdb: Win32WritableFile without memory mapping
 - #6948 `4e895b0` Always flush block and undo when switching to new file
 
 Credits

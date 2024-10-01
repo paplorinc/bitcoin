@@ -584,7 +584,7 @@ A detailed list of changes in this version follows. To keep the list to a manage
 - bitcoin/bitcoin#21226 Fix fuzz binary compilation under windows (danben)
 - bitcoin/bitcoin#21231 Add /opt/homebrew to path to look for boost libraries (fyquah)
 - bitcoin/bitcoin#21239 guix: Add codesignature attachment support for osx+win (dongcarl)
-- bitcoin/bitcoin#21250 Make `HAVE_O_CLOEXEC` available outside LevelDB (bugfix) (theStack)
+- bitcoin/bitcoin#21250 Make `HAVE_O_CLOEXEC` available outside RocksDB (bugfix) (theStack)
 - bitcoin/bitcoin#21272 guix: Passthrough `SDK_PATH` into container (dongcarl)
 - bitcoin/bitcoin#21274 assumptions:  Assume C++17 (fanquake)
 - bitcoin/bitcoin#21286 Bump minimum Qt version to 5.9.5 (hebasto)

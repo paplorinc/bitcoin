@@ -207,7 +207,7 @@ Command-line options:
 
 Block-chain handling and storage:
 
-- Update leveldb to 1.15
+- Update rocksdb to 1.15
 - Check for correct genesis (prevent cases where a datadir from the wrong
   network is accidentally loaded)
 - Allow txindex to be removed and add a reindex dialog

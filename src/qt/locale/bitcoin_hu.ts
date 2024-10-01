@@ -4400,8 +4400,8 @@ A "Fájl &gt; Tárca megnyitása" menüben tölthet be egyet.
         <translation type="unfinished">A kilépő kapcsolatok i2p-re korlátozottak (-onlynet=i2p) de nincs megadva -i2psam</translation>
     </message>
     <message>
-        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate leveldb directory.</source>
-        <translation type="unfinished">Nem sikerült az '%s' -&gt; '%s' átnevezés. Nem lehet kitisztítani a háttér láncállapot leveldb könyvtárat.</translation>
+        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate rocksdb directory.</source>
+        <translation type="unfinished">Nem sikerült az '%s' -&gt; '%s' átnevezés. Nem lehet kitisztítani a háttér láncállapot rocksdb könyvtárat.</translation>
     </message>
     <message>
         <source>The combination of the pre-selected inputs and the wallet automatic inputs selection exceeds the transaction maximum weight. Please try sending a smaller amount or manually consolidating your wallet's UTXOs</source>

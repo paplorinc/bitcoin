@@ -106,7 +106,7 @@ Initial Block Download, startup, transaction and block validation much faster:
   validity (See [PR 10192](https://github.com/bitcoin/bitcoin/pull/10192)). This means that if a transaction in a block has already been accepted to the
   mempool, the scriptSig does not need to be re-evaluated. Empirical tests show that
   this results in new block validation being 40-50% faster.
-- LevelDB has been upgraded to version 1.20 (See [PR 10544](https://github.com/bitcoin/bitcoin/pull/10544)). This version contains hardware acceleration for CRC
+- RocksDB has been upgraded to version 1.20 (See [PR 10544](https://github.com/bitcoin/bitcoin/pull/10544)). This version contains hardware acceleration for CRC
   on architectures supporting SSE 4.2. As a result, synchronization and block validation are now faster.
 - SHA256 hashing has been optimized for architectures supporting SSE 4 (See [PR 10821](https://github.com/bitcoin/bitcoin/pull/10821)). SHA256 is around
   50% faster on supported hardware, which results in around 5% faster IBD and block
@@ -384,7 +384,7 @@ Low-level RPC changes
 - #10558 `90a002e` Address nits from per-utxo change (morcos)
 - #10706 `6859ad2` Improve wallet fee logic and fix GUI bugs (morcos)
 - #10526 `754aa02` Force on-the-fly compaction during pertxout upgrade (sipa)
-- #10985 `d896d5c` Add undocumented -forcecompactdb to force LevelDB compactions (sipa)
+- #10985 `d896d5c` Add undocumented -forcecompactdb to force RocksDB compactions (sipa)
 - #10292 `e4bbd3d` Improved efficiency in COutPoint constructors (mm-s)
 - #10290 `8d6d43e` Add -stopatheight for benchmarking (sipa)
 
@@ -759,19 +759,19 @@ Low-level RPC changes
 - #9792 `342b9bc` FastRandomContext improvements and switch to ChaCha20 (sipa)
 - #9505 `67ed40e` Prevector Quick Destruct (JeremyRubin)
 - #10820 `ef37f20` Use cpuid intrinsics instead of asm code (sipa)
-- #9999 `a328904` [LevelDB] Plug leveldb logs to bitcoin logs (NicolasDorier)
+- #9999 `a328904` [RocksDB] Plug rocksdb logs to bitcoin logs (NicolasDorier)
 - #9693 `c5e9e42` Prevent integer overflow in ReadVarInt (gmaxwell)
 - #10129 `351d0ad` scheduler: fix sub-second precision with boost < 1.50 (theuni)
 - #10153 `fade788` logging: Fix off-by-one for shrinkdebugfile default (MarcoFalke)
 - #10305 `c45da32` Fix potential NPD introduced in b297426c (TheBlueMatt)
 - #10338 `daf3e7d` Maintain state across GetStrongRandBytes calls (sipa)
-- #10544 `a4fe077` Update to LevelDB 1.20 (sipa)
+- #10544 `a4fe077` Update to RocksDB 1.20 (sipa)
 - #10614 `cafe24f` random: fix crash on some 64bit platforms (theuni)
 - #10714 `2a09a38` Avoid printing incorrect block indexing time due to uninitialized variable (practicalswift)
 - #10837 `8bc6d1f` Fix resource leak on error in GetDevURandom (corebob)
 - #10832 `89bb036` init: Factor out AppInitLockDataDirectory and fix startup core dump issue (laanwj)
 - #10914 `b995a37` Add missing lock in CScheduler::AreThreadsServicingQueue() (TheBlueMatt)
-- #10958 `659c096` Update to latest Bitcoin patches for LevelDB (sipa)
+- #10958 `659c096` Update to latest Bitcoin patches for RocksDB (sipa)
 - #10919 `c1c671f` Fix more init bugs (TheBlueMatt)
 
 Credits

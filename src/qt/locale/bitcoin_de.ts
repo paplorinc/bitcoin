@@ -4289,8 +4289,8 @@ Bitte nutzen Sie entweder "bdb" oder "sqlite".</translation>
         <translation type="unfinished">Ausgehende Verbindungen sind auf i2p (-onlynet=i2p) beschränkt, aber -i2psam ist nicht angegeben</translation>
     </message>
     <message>
-        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate leveldb directory.</source>
-        <translation type="unfinished">Die Umbenennung von '%s' -&gt; '%s' ist fehlgeschlagen. Das Hintergrund-Verzeichnis chainstate leveldb kann nicht bereinigt werden.</translation>
+        <source>Rename of '%s' -&gt; '%s' failed. Cannot clean up the background chainstate rocksdb directory.</source>
+        <translation type="unfinished">Die Umbenennung von '%s' -&gt; '%s' ist fehlgeschlagen. Das Hintergrund-Verzeichnis chainstate rocksdb kann nicht bereinigt werden.</translation>
     </message>
     <message>
         <source>The combination of the pre-selected inputs and the wallet automatic inputs selection exceeds the transaction maximum weight. Please try sending a smaller amount or manually consolidating your wallet's UTXOs</source>

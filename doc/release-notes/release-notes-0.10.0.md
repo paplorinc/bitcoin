@@ -369,7 +369,7 @@ RPC:
 - `31d6390` Fixed setaccount accepting foreign address
 - `b5ec5fe` update getnetworkinfo help with subversion
 - `ad6e601` RPC additions after headers-first
-- `33dfbf5` rpc: Fix leveldb iterator leak, and flush before `gettxoutsetinfo`
+- `33dfbf5` rpc: Fix rocksdb iterator leak, and flush before `gettxoutsetinfo`
 - `2aa6329` Enable customising node policy for datacarrier data size with a -datacarriersize option
 - `f877aaa` submitblock: Use a temporary CValidationState to determine accurately the outcome of ProcessBlock
 - `e69a587` submitblock: Support for returning specific rejection reasons
@@ -632,13 +632,13 @@ Miscellaneous:
 - `675bcd5` Correct comment for 15-of-15 p2sh script size
 - `fda3fed` libsecp256k1 integration
 - `2e36866` Show nodeid instead of addresses in log (for anonymity) unless otherwise requested
-- `cd01a5e` Enable paranoid corruption checks in LevelDB >= 1.16
+- `cd01a5e` Enable paranoid corruption checks in RocksDB >= 1.16
 - `9365937` Add comment about never updating nTimeOffset past 199 samples
 - `403c1bf` contrib: remove getwork-based pyminer (as getwork API call has been removed)
 - `0c3e101` contrib: Added systemd .service file in order to help distributions integrate bitcoind
 - `0a0878d` doc: Add new DNSseed policy
 - `2887bff` Update coding style and add .clang-format
-- `5cbda4f` Changed LevelDB cursors to use scoped pointers to ensure destruction when going out of scope
+- `5cbda4f` Changed RocksDB cursors to use scoped pointers to ensure destruction when going out of scope
 - `b4a72a7` contrib/linearize: split output files based on new-timestamp-year or max-file-size
 - `e982b57` Use explicit fflush() instead of setvbuf()
 - `234bfbf` contrib: Add init scripts and docs for Upstart and OpenRC
@@ -647,9 +647,9 @@ Miscellaneous:
 - `772ab0e` contrib: use batched JSON-RPC in linarize-hashes (optimization)
 - `7ab4358` Update bash-completion for v0.10
 - `6e6a36c` contrib: show pull # in prompt for github-merge script
-- `5b9f842` Upgrade leveldb to 1.18, make chainstate databases compatible between ARM and x86 (issue #2293)
+- `5b9f842` Upgrade rocksdb to 1.18, make chainstate databases compatible between ARM and x86 (issue #2293)
 - `4e7c219` Catch UTXO set read errors and shutdown
-- `867c600` Catch LevelDB errors during flush
+- `867c600` Catch RocksDB errors during flush
 - `06ca065` Fix CScriptID(const CScript& in) in empty script case
 
 Credits

@@ -909,7 +909,7 @@ Coin MakeCoin()
 
 
 //! For CCoinsViewCache instances backed by either another cache instance or
-//! leveldb, test cache behavior and flag state (DIRTY/FRESH) by
+//! rocksdb, test cache behavior and flag state (DIRTY/FRESH) by
 //!
 //! 1. Adding a random coin to the child-most cache,
 //! 2. Flushing all caches (without erasing),
@@ -1088,7 +1088,7 @@ void TestFlushBehavior(
 
 BOOST_FIXTURE_TEST_CASE(ccoins_flush_behavior, FlushTest)
 {
-    // Create two in-memory caches atop a leveldb view.
+    // Create two in-memory caches atop a rocksdb view.
     CCoinsViewDB base{{.path = "test", .cache_bytes = 1 << 23, .memory_only = true}, {}};
     std::vector<std::unique_ptr<CCoinsViewCacheTest>> caches;
     caches.push_back(std::make_unique<CCoinsViewCacheTest>(&base));
