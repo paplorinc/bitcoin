@@ -55,7 +55,7 @@ FUZZ_TARGET(block_index, .init = init_block_index)
 {
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
     auto block_index = kernel::BlockTreeDB(DBParams{
-        .path = "", // Memory only.
+        .path = "/test", // Memory only.
         .cache_bytes = 1 << 20, // 1MB.
         .memory_only = true,
     });
