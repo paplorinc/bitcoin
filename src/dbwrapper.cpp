@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <memory>
 #include <optional>
+#include <thread>
 #include <utility>
 
 static auto CharCast(const std::byte* data) { return reinterpret_cast<const char*>(data); }
@@ -133,11 +134,18 @@ static void SetMaxOpenFiles(rocksdb::Options* options)
 static rocksdb::Options GetOptions(size_t nCacheSize)
 {
     rocksdb::Options options;
-    // Set up BlockBasedTableOptions
-    rocksdb::BlockBasedTableOptions table_options;
-    table_options.block_cache = rocksdb::NewLRUCache(nCacheSize / 2);
-    table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10));
-    options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+
+    options.IncreaseParallelism(std::max(1, static_cast<int>(std::thread::hardware_concurrency() * 0.8)));
+
+    //options.OptimizeLevelStyleCompaction(nCacheSize);
+    //options.OptimizeForPointLookup(nCacheSize >> 20);
+
+    {
+        rocksdb::BlockBasedTableOptions table_options;
+        table_options.block_cache = rocksdb::NewLRUCache(nCacheSize / 2);
+        table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10));
+        options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+    }
 
     options.write_buffer_size = nCacheSize / 4;
     options.compression = rocksdb::kNoCompression;
