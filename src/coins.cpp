@@ -39,6 +39,7 @@ CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn, bool deterministic) :
     cacheCoins(0, SaltedOutpointHasher(/*deterministic=*/deterministic), CCoinsMap::key_equal{}, &m_cache_coins_memory_resource)
 {
     m_sentinel.second.SelfRef(m_sentinel);
+    m_clean_sentinel.second.SelfRef(m_clean_sentinel);
 }
 
 size_t CCoinsViewCache::DynamicMemoryUsage() const {
@@ -55,10 +56,13 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
         if (auto coin{base->GetCoin(outpoint)}) {
             ret->second.coin = std::move(*coin);
             cachedCoinsUsage += ret->second.coin.DynamicMemoryUsage();
-            if (ret->second.coin.IsSpent()) { // TODO GetCoin cannot return spent coins
+            if (ret->second.coin.IsSpent()) {
                 // The parent only has an empty entry for this outpoint; we can consider our version as fresh.
                 ret->second.AddFlags(CCoinsCacheEntry::FRESH, *ret, m_sentinel);
+            } else {
+                ret->second.SetClean(*ret, m_clean_sentinel);
             }
+
         } else {
             cacheCoins.erase(ret);
             return cacheCoins.end();
@@ -258,7 +262,7 @@ bool CCoinsViewCache::BatchWrite(CoinsViewCacheCursor& cursor, const uint256 &ha
 }
 
 bool CCoinsViewCache::Flush() {
-    auto cursor{CoinsViewCacheCursor(cachedCoinsUsage, m_sentinel, cacheCoins, /*will_erase=*/true)};
+    auto cursor{CoinsViewCacheCursor(cachedCoinsUsage, m_sentinel, m_clean_sentinel, cacheCoins, /*will_erase=*/true)};
     bool fOk = base->BatchWrite(cursor, hashBlock);
     if (fOk) {
         cacheCoins.clear();
@@ -270,7 +274,7 @@ bool CCoinsViewCache::Flush() {
 
 bool CCoinsViewCache::Sync()
 {
-    auto cursor{CoinsViewCacheCursor(cachedCoinsUsage, m_sentinel, cacheCoins, /*will_erase=*/false)};
+    auto cursor{CoinsViewCacheCursor(cachedCoinsUsage, m_sentinel, m_clean_sentinel, cacheCoins, /*will_erase=*/false)};
     bool fOk = base->BatchWrite(cursor, hashBlock);
     if (fOk) {
         if (m_sentinel.second.Next() != &m_sentinel) {
