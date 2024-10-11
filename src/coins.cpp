@@ -294,11 +294,27 @@ unsigned int CCoinsViewCache::GetCacheSize() const {
 
 bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
 {
-    if (!tx.IsCoinBase()) {
-        for (unsigned int i = 0; i < tx.vin.size(); i++) {
-            if (!HaveCoin(tx.vin[i].prevout)) {
+    if (tx.IsCoinBase()) return true;
+
+    for (unsigned int i = 0; i < tx.vin.size(); i++) {
+        const COutPoint& outpoint = tx.vin[i].prevout;
+        const auto [ret, inserted] = cacheCoins.try_emplace(outpoint);
+        if (inserted) {
+            if (auto coin{base->GetCoin(outpoint)}) {
+                ret->second.coin = std::move(*coin);
+                cachedCoinsUsage += ret->second.coin.DynamicMemoryUsage();
+                if (ret->second.coin.IsSpent()) {
+                    // The parent only has an empty entry for this outpoint; we can consider our version as fresh.
+                    ret->second.AddFlags(CCoinsCacheEntry::FRESH, *ret, m_sentinel);
+                    return false;
+                }
+            } else {
+                cacheCoins.erase(ret);
                 return false;
             }
+        }
+        if (ret == cacheCoins.end() || ret->second.coin.IsSpent()) { // TODO ret == cacheCoins.end()
+            return false;
         }
     }
     return true;
