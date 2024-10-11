@@ -298,7 +298,7 @@ target_link_libraries(bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_zmq>
     $<TARGET_NAME_IF_EXISTS:USDT::headers>
 )
-
+target_include_directories(bitcoin_node PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/rocksdb")
 
 # Bitcoin Core bitcoind.
 if(BUILD_DAEMON)

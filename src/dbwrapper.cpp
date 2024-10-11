@@ -18,18 +18,13 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
-#include <rocksdb/cache.h>
-#include <rocksdb/db.h>
-#include <rocksdb/env.h>
-#include <rocksdb/filter_policy.h>
-#include <rocksdb/helpers/memenv/memenv.h>
-#include <rocksdb/iterator.h>
-#include <rocksdb/options.h>
-#include <rocksdb/slice.h>
-#include <rocksdb/status.h>
-#include <rocksdb/write_batch.h>
+#include "rocksdb/db.h"
+#include "rocksdb/env.h"
+#include "rocksdb/filter_policy.h"
+#include "rocksdb/table.h"
 #include <memory>
 #include <optional>
+#include <thread>
 #include <utility>
 
 static auto CharCast(const std::byte* data) { return reinterpret_cast<const char*>(data); }
@@ -137,16 +132,12 @@ static void SetMaxOpenFiles(rocksdb::Options *options) {
 static rocksdb::Options GetOptions(size_t nCacheSize)
 {
     rocksdb::Options options;
-    options.block_cache = rocksdb::NewLRUCache(nCacheSize / 2);
-    options.write_buffer_size = nCacheSize / 4; // up to two write buffers may be held in memory simultaneously
-    options.filter_policy = rocksdb::NewBloomFilterPolicy(10);
-    options.compression = rocksdb::kNoCompression;
-    options.info_log = new CBitcoinRocksDBLogger();
-    if (rocksdb::kMajorVersion > 1 || (rocksdb::kMajorVersion == 1 && rocksdb::kMinorVersion >= 16)) {
-        // RocksDB versions before 1.16 consider short writes to be corruption. Only trigger error
-        // on corruption in later versions.
-        options.paranoid_checks = true;
-    }
+    options.IncreaseParallelism(std::max(1, static_cast<int>(std::thread::hardware_concurrency() * 0.8)));
+    options.compression = rocksdb::kZSTD;
+
+    options.write_buffer_size = nCacheSize / 4;
+    options.info_log = std::make_shared<CBitcoinRocksDBLogger>();
+    options.paranoid_checks = true;
     SetMaxOpenFiles(&options);
     return options;
 }
@@ -250,7 +241,8 @@ CDBWrapper::CDBWrapper(const DBParams& params)
 
     if (params.options.force_compact) {
         LogPrintf("Starting database compaction of %s\n", fs::PathToString(params.path));
-        DBContext().pdb->CompactRange(nullptr, nullptr);
+        rocksdb::CompactRangeOptions compact_options;
+        DBContext().pdb->CompactRange(compact_options, nullptr, nullptr);
         LogPrintf("Finished database compaction of %s\n", fs::PathToString(params.path));
     }
 
@@ -278,14 +270,11 @@ CDBWrapper::~CDBWrapper()
 {
     delete DBContext().pdb;
     DBContext().pdb = nullptr;
-    delete DBContext().options.filter_policy;
-    DBContext().options.filter_policy = nullptr;
-    delete DBContext().options.info_log;
-    DBContext().options.info_log = nullptr;
-    delete DBContext().options.block_cache;
-    DBContext().options.block_cache = nullptr;
-    delete DBContext().penv;
-    DBContext().options.env = nullptr;
+
+    if (DBContext().penv != nullptr) {
+        delete DBContext().penv;
+        DBContext().penv = nullptr;
+    }
 }
 
 bool CDBWrapper::WriteBatch(CDBBatch& batch, bool fSync)

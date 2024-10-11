@@ -577,7 +577,7 @@ add_subdirectory(test)
 add_subdirectory(doc)
 
 include(cmake/crc32c.cmake)
-include(cmake/leveldb.cmake)
+add_subdirectory(src/rocksdb)
 include(cmake/minisketch.cmake)
 add_subdirectory(src)
 
