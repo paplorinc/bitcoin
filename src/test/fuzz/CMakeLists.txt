@@ -135,6 +135,7 @@ target_link_libraries(fuzz
   bitcoin_common
   bitcoin_util
   minisketch
+  zstd
   rocksdb
   univalue
   secp256k1

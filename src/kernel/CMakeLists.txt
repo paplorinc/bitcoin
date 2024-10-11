@@ -82,6 +82,7 @@ target_link_libraries(bitcoinkernel
     core_interface
     bitcoin_clientversion
     bitcoin_crypto
+    zstd
     rocksdb
     secp256k1
   PUBLIC
