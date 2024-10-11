@@ -133,9 +133,9 @@ static rocksdb::Options GetOptions(size_t nCacheSize)
 {
     rocksdb::Options options;
     options.IncreaseParallelism(std::max(1, static_cast<int>(std::thread::hardware_concurrency() * 0.8)));
-    options.compression = rocksdb::kZSTD;
 
     options.write_buffer_size = nCacheSize / 4;
+    options.compression = rocksdb::kNoCompression;
     options.info_log = std::make_shared<CBitcoinRocksDBLogger>();
     options.paranoid_checks = true;
     SetMaxOpenFiles(&options);
