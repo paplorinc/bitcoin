@@ -92,8 +92,8 @@ using node::SnapshotMetadata;
  *  Randomize writing time inside the window to prevent a situation where the
  *  network over time settles into a few cohorts of synchronized writers.
 */
-static constexpr auto DATABASE_WRITE_INTERVAL_MIN{50min};
-static constexpr auto DATABASE_WRITE_INTERVAL_MAX{70min};
+static constexpr auto DATABASE_WRITE_INTERVAL_MIN{100min};
+static constexpr auto DATABASE_WRITE_INTERVAL_MAX{120min};
 /** Maximum age of our tip for us to be considered current for fee estimation */
 static constexpr std::chrono::hours MAX_FEE_ESTIMATION_TIP_AGE{3};
 const std::vector<std::string> CHECKLEVEL_DOC {
