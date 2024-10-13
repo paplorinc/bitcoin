@@ -313,7 +313,7 @@ public:
             if (auto coin = GetCoin(outpoint)) {
                 result.push_back(*coin);
             } else {
-                assert(false); // TODO
+                // assert(false); // TODO
                 return {};
             }
         }

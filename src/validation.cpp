@@ -2561,13 +2561,16 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     // consensus change that ensures coinbases at those heights cannot
     // duplicate earlier coinbases.
     if (fEnforceBIP30 || pindex->nHeight >= BIP34_IMPLIES_BIP30_LIMIT) {
+    std::vector<COutPoint> outpoints_to_check;
+    outpoints_to_check.reserve(2 * block.vtx.size());
         for (const auto& tx : block.vtx) {
             for (size_t o = 0; o < tx->vout.size(); o++) {
-                if (view.HaveCoin(COutPoint(tx->GetHash(), o))) {
-                    LogPrintf("ERROR: ConnectBlock(): tried to overwrite transaction\n");
-                    return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-BIP30");
-                }
+                outpoints_to_check.emplace_back(tx->GetHash(), o);
             }
+        }
+        if (view.GetCoins(outpoints_to_check).size() > 0) {
+            LogPrintf("ERROR: ConnectBlock(): tried to overwrite transaction\n");
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-BIP30");
         }
     }
 
