@@ -120,7 +120,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
     bool fCoinbase = tx.IsCoinBase();
     const Txid& txid = tx.GetHash();
     for (size_t i = 0; i < tx.vout.size(); ++i) {
-        bool overwrite = check_for_overwrite ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
+        bool overwrite = check_for_overwrite ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase; // TODO bulk
         // Coinbase transactions can always be overwritten, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
         cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
@@ -296,25 +296,26 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
 {
     if (tx.IsCoinBase()) return true;
 
-    for (unsigned int i = 0; i < tx.vin.size(); i++) {
-        const COutPoint& outpoint = tx.vin[i].prevout;
-        const auto [ret, inserted] = cacheCoins.try_emplace(outpoint);
-        if (inserted) {
-            if (auto coin{base->GetCoin(outpoint)}) {
-                ret->second.coin = std::move(*coin);
-                cachedCoinsUsage += ret->second.coin.DynamicMemoryUsage();
-                if (ret->second.coin.IsSpent()) {
-                    // The parent only has an empty entry for this outpoint; we can consider our version as fresh.
-                    ret->second.AddFlags(CCoinsCacheEntry::FRESH, *ret, m_sentinel);
-                    return false;
-                }
-            } else {
-                cacheCoins.erase(ret);
+    std::vector<COutPoint> missing;
+    missing.reserve(tx.vin.size());
+    for (const auto& input : tx.vin) {
+        const COutPoint& outpoint = input.prevout;
+        if (auto it = cacheCoins.find(outpoint); it == cacheCoins.end()) {
+            missing.push_back(outpoint);
+        } else if (it->second.coin.IsSpent()) {
+            return false;
+        }
+    }
+    std::vector<Coin> fetched_coins = GetCoins(missing);
+    for (size_t i = 0; i < missing.size(); ++i) {
+        auto [it, inserted] = cacheCoins.try_emplace(missing[i]);
+        if (inserted) { // TODO how can this not be inserted if it was missing?
+            it->second.coin = std::move(fetched_coins[i]);
+            cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
+            if (it->second.coin.IsSpent()) {
+                it->second.AddFlags(CCoinsCacheEntry::FRESH, *it, m_sentinel);
                 return false;
             }
-        }
-        if (ret == cacheCoins.end() || ret->second.coin.IsSpent()) { // TODO ret == cacheCoins.end()
-            return false;
         }
     }
     return true;

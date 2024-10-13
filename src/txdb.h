@@ -58,6 +58,8 @@ public:
     explicit CCoinsViewDB(DBParams db_params, CoinsViewOptions options);
 
     std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
+    std::vector<Coin> GetCoins(const std::vector<COutPoint>& outpoints) const;
+
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
