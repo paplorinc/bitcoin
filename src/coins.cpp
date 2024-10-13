@@ -10,6 +10,7 @@
 #include <util/trace.h>
 
 std::optional<Coin> CCoinsView::GetCoin(const COutPoint& outpoint) const { return std::nullopt; }
+std::vector<Coin> CCoinsView::GetCoins(const std::vector<COutPoint>& outpoints) const { return {}; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CoinsViewCacheCursor& cursor, const uint256 &hashBlock) { return false; }

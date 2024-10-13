@@ -76,9 +76,11 @@ std::vector<Coin> CCoinsViewDB::GetCoins(const std::vector<COutPoint>& outpoints
     if (outpoints.empty()) return {};
     std::vector<CoinEntry> entries;
     entries.reserve(outpoints.size());
-    for (const auto& outpoint : outpoints) entries.emplace_back(&outpoint);
+    for (auto& outpoint : outpoints) entries.emplace_back(&outpoint);
 
-    return m_db->MultiRead<CoinEntry, Coin>(entries);
+    auto ret = m_db->MultiRead<CoinEntry, Coin>(entries);
+    assert (ret.size() == outpoints.size());
+    return ret;
 }
 
 bool CCoinsViewDB::HaveCoin(const COutPoint &outpoint) const {

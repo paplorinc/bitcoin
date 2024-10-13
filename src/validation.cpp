@@ -847,25 +847,31 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
 
     const CCoinsViewCache& coins_cache = m_active_chainstate.CoinsTip();
     // do all inputs exist?
+    std::vector<COutPoint> outpoints_to_check;
+    outpoints_to_check.reserve(tx.vin.size());
     for (const CTxIn& txin : tx.vin) {
         if (!coins_cache.HaveCoinInCache(txin.prevout)) {
             coins_to_uncache.push_back(txin.prevout);
         }
+        outpoints_to_check.push_back(txin.prevout);
+    }
 
-        // Note: this call may add txin.prevout to the coins cache
-        // (coins_cache.cacheCoins) by way of FetchCoin(). It should be removed
-        // later (via coins_to_uncache) if this tx turns out to be invalid.
-        if (!m_view.HaveCoin(txin.prevout)) {
-            // Are inputs missing because we already have the tx?
-            for (size_t out = 0; out < tx.vout.size(); out++) {
-                // Optimistically just do efficient check of cache for outputs
-                if (coins_cache.HaveCoinInCache(COutPoint(hash, out))) {
-                    return state.Invalid(TxValidationResult::TX_CONFLICT, "txn-already-known");
-                }
+    // Note: this call may add txin.prevout to the coins cache
+    // (coins_cache.cacheCoins) by way of FetchCoin(). It should be removed
+    // later (via coins_to_uncache) if this tx turns out to be invalid.
+    if (!m_view.HaveCoin(txin.prevout)) {
+//    std::vector<Coin> coins = m_view.GetCoins(outpoints_to_check);
+//    for (size_t i = 0; i < outpoints_to_check.size(); ++i) {
+//        if (!coins[i].IsSpent()) {
+        // Are inputs missing because we already have the tx?
+        for (size_t out = 0; out < tx.vout.size(); out++) {
+            // Optimistically just do efficient check of cache for outputs
+            if (coins_cache.HaveCoinInCache(COutPoint(hash, out))) {
+                return state.Invalid(TxValidationResult::TX_CONFLICT, "txn-already-known");
             }
-            // Otherwise assume this might be an orphan tx for which we just haven't seen parents yet
-            return state.Invalid(TxValidationResult::TX_MISSING_INPUTS, "bad-txns-inputs-missingorspent");
         }
+        // Otherwise assume this might be an orphan tx for which we just haven't seen parents yet
+        return state.Invalid(TxValidationResult::TX_MISSING_INPUTS, "bad-txns-inputs-missingorspent");
     }
 
     // This is const, but calls into the back end CoinsViews. The CCoinsViewDB at the bottom of the
