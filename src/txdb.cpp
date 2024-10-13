@@ -82,7 +82,7 @@ std::vector<Coin> CCoinsViewDB::GetCoins(const std::vector<COutPoint>& outpoints
 }
 
 bool CCoinsViewDB::HaveCoin(const COutPoint &outpoint) const {
-    return m_db->Exists(CoinEntry(&outpoint)); // TODO bulk
+    return m_db->Exists(CoinEntry(&outpoint));
 }
 
 uint256 CCoinsViewDB::GetBestBlock() const {
