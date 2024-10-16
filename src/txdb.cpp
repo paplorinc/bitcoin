@@ -69,8 +69,17 @@ bool CCoinsViewDB::GetCoin(const COutPoint &outpoint, Coin &coin) const {
     return m_db->Read(CoinEntry(&outpoint), coin);
 }
 
+std::vector<Coin> CCoinsViewDB::GetUnspentCoins(const Span<COutPoint>& outpoints) const
+{
+    if (outpoints.empty()) return {};
+    std::vector<CoinEntry> entries;
+    entries.reserve(outpoints.size());
+    for (const auto& outpoint : outpoints) entries.emplace_back(&outpoint);
+    return m_db->MultiRead<CoinEntry, Coin>(entries);
+}
+
 bool CCoinsViewDB::HaveCoin(const COutPoint &outpoint) const {
-    return m_db->Exists(CoinEntry(&outpoint));
+    return m_db->Exists(CoinEntry(&outpoint)); // TODO bulk
 }
 
 uint256 CCoinsViewDB::GetBestBlock() const {

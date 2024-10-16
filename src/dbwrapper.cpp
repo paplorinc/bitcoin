@@ -351,6 +351,28 @@ std::optional<std::string> CDBWrapper::ReadImpl(Span<const std::byte> key) const
     return strValue;
 }
 
+std::vector<std::string> CDBWrapper::MultiReadImpl(Span<std::string> keys) const
+{
+    std::vector<rocksdb::Slice> slices;
+    slices.reserve(keys.size());
+    for (const auto& key : keys) slices.emplace_back(key);
+
+    std::vector<std::string> values;
+    std::vector<rocksdb::Status> statuses = DBContext().pdb->MultiGet(DBContext().readoptions, slices, &values);
+
+    for (size_t i = 0; i < statuses.size(); ++i) {
+        if (!statuses[i].ok()) {
+            if (statuses[i].IsNotFound()) {
+                values[i].clear();
+            } else {
+                LogPrintf("RocksDB MultiGet failure: %s\n", statuses[i].ToString());
+                HandleError(statuses[i]);
+            }
+        }
+    }
+
+    return values;
+}
 bool CDBWrapper::ExistsImpl(Span<const std::byte> key) const
 {
     rocksdb::Slice slKey(CharCast(key.data()), key.size());

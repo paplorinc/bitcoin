@@ -9,7 +9,11 @@
 #include <random.h>
 #include <util/trace.h>
 
+#include <set>
+#include <vector>
+
 bool CCoinsView::GetCoin(const COutPoint &outpoint, Coin &coin) const { return false; }
+std::vector<Coin> CCoinsView::GetUnspentCoins(const Span<COutPoint>& outpoints) const { return {}; }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 bool CCoinsView::BatchWrite(CoinsViewCacheCursor& cursor, const uint256 &hashBlock) { return false; }
@@ -23,6 +27,7 @@ bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
 
 CCoinsViewBacked::CCoinsViewBacked(CCoinsView *viewIn) : base(viewIn) { }
 bool CCoinsViewBacked::GetCoin(const COutPoint &outpoint, Coin &coin) const { return base->GetCoin(outpoint, coin); }
+std::vector<Coin> CCoinsViewBacked::GetUnspentCoins(const Span<COutPoint>& outpoints) const { return base->GetUnspentCoins(outpoints); }
 bool CCoinsViewBacked::HaveCoin(const COutPoint &outpoint) const { return base->HaveCoin(outpoint); }
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetHeadBlocks(); }
@@ -65,6 +70,47 @@ bool CCoinsViewCache::GetCoin(const COutPoint &outpoint, Coin &coin) const {
         return !coin.IsSpent();
     }
     return false;
+}
+
+std::vector<Coin> CCoinsViewCache::GetUnspentCoins(const Span<COutPoint>& outpoints) const
+{
+    std::vector<COutPoint> missing;
+    missing.reserve(outpoints.size());
+    for (const auto& outpoint : outpoints) {
+        if (auto it = cacheCoins.find(outpoint); it == cacheCoins.end()) {
+            missing.push_back(outpoint);
+        } else if (it->second.coin.IsSpent()) {
+            return {}; // error
+        }
+    }
+
+    if (!missing.empty()) {
+        auto coins = base->GetUnspentCoins(missing);
+        if (coins.empty()) return {};
+        assert(coins.size() == missing.size());
+        for (size_t i = 0; i < coins.size(); ++i) {
+            Coin& coin = coins[i];
+            if (coin.IsSpent()) return {}; // error
+
+            const auto [it, inserted] = cacheCoins.try_emplace(missing[i]);
+            assert(inserted);
+            if (!base->GetCoin(missing[i], it->second.coin)) {
+                cacheCoins.erase(it);
+                return {};
+            }
+            if (it->second.coin.IsSpent()) {
+                assert(false);
+                // The parent only has an empty entry for this outpoint; we can consider our version as fresh.
+                it->second.AddFlags(CCoinsCacheEntry::FRESH, *it, m_sentinel);
+            }
+            cachedCoinsUsage += it->second.coin.DynamicMemoryUsage();
+        }
+    }
+
+    std::vector<Coin> results;
+    results.reserve(outpoints.size());
+    for (const auto& outpoint : outpoints) results.push_back(cacheCoins.at(outpoint).coin);
+    return results;
 }
 
 void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possible_overwrite) {
@@ -122,7 +168,7 @@ void AddCoins(CCoinsViewCache& cache, const CTransaction &tx, int nHeight, bool 
     bool fCoinbase = tx.IsCoinBase();
     const Txid& txid = tx.GetHash();
     for (size_t i = 0; i < tx.vout.size(); ++i) {
-        bool overwrite = check_for_overwrite ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase;
+        bool overwrite = check_for_overwrite ? cache.HaveCoin(COutPoint(txid, i)) : fCoinbase; // TODO bulk
         // Coinbase transactions can always be overwritten, in order to correctly
         // deal with the pre-BIP30 occurrences of duplicate coinbase transactions.
         cache.AddCoin(COutPoint(txid, i), Coin(tx.vout[i], nHeight, fCoinbase), overwrite);
@@ -298,12 +344,30 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
 {
     if (!tx.IsCoinBase()) {
         for (unsigned int i = 0; i < tx.vin.size(); i++) {
-            if (!HaveCoin(tx.vin[i].prevout)) {
+            if (!HaveCoin(tx.vin[i].prevout)) { // all inputs should already be cached
                 return false;
             }
         }
     }
     return true;
+}
+
+bool CCoinsViewCache::CacheBlockInputs(const CBlock& block) const
+{
+    std::set<Txid> txids{}; // TODO unordered_set?
+    std::vector<COutPoint> inputs;
+    inputs.reserve(block.vtx.size());
+    for (auto tx : block.vtx) {
+        if (tx->IsCoinBase()) continue;
+        for (auto input : tx->vin) {
+            const COutPoint& outpoint = input.prevout;
+            if (txids.contains(outpoint.hash)) continue;
+            inputs.emplace_back(outpoint);
+        }
+        txids.emplace(tx->GetHash());
+    }
+
+    return inputs.empty() || GetUnspentCoins(inputs).size() == inputs.size();
 }
 
 void CCoinsViewCache::ReallocateCache()

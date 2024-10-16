@@ -308,6 +308,7 @@ public:
      *  When false is returned, coin's value is unspecified.
      */
     virtual bool GetCoin(const COutPoint &outpoint, Coin &coin) const;
+    virtual std::vector<Coin> GetUnspentCoins(const Span<COutPoint>& outpoints) const;
 
     //! Just check whether a given outpoint is unspent.
     virtual bool HaveCoin(const COutPoint &outpoint) const;
@@ -345,6 +346,7 @@ protected:
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
+    std::vector<Coin> GetUnspentCoins(const Span<COutPoint>& outpoints) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
@@ -385,6 +387,7 @@ public:
 
     // Standard CCoinsView methods
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
+    std::vector<Coin> GetUnspentCoins(const Span<COutPoint>& outpoints) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
@@ -475,6 +478,7 @@ public:
 
     //! Run an internal sanity check on the cache data structure. */
     void SanityCheck() const;
+    bool CacheBlockInputs(const CBlock& block) const;
 
 private:
     /**
