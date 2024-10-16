@@ -2561,17 +2561,16 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     //Only continue to enforce if we're below BIP34 activation height or the block hash at that height doesn't correspond.
     fEnforceBIP30 = fEnforceBIP30 && (!pindexBIP34height || !(pindexBIP34height->GetBlockHash() == params.GetConsensus().BIP34Hash));
 
+    auto cache_populated = view.CacheBlockInputsAndOutputs(block);
+    assert(cache_populated);
+
     // TODO: Remove BIP30 checking from block height 1,983,702 on, once we have a
     // consensus change that ensures coinbases at those heights cannot
     // duplicate earlier coinbases.
     if (fEnforceBIP30 || pindex->nHeight >= BIP34_IMPLIES_BIP30_LIMIT) {
-        for (const auto& tx : block.vtx) {
-            for (size_t o = 0; o < tx->vout.size(); o++) {
-                if (view.HaveCoin(COutPoint(tx->GetHash(), o))) { // TODO
-                    LogPrintf("ERROR: ConnectBlock(): tried to overwrite transaction\n");
-                    return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-BIP30");
-                }
-            }
+        if (view.HaveOutputs(block)) {
+            LogPrintf("ERROR: ConnectBlock(): tried to overwrite transaction\n");
+            return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-BIP30");
         }
     }
 
@@ -2601,8 +2600,6 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     CCheckQueueControl<CScriptCheck> control(fScriptChecks && parallel_script_checks ? &m_chainman.GetCheckQueue() : nullptr);
     std::vector<PrecomputedTransactionData> txsdata(block.vtx.size());
 
-    auto cache_populated = view.CacheBlockInputs(block);
-    assert(cache_populated);
     std::vector<int> prevheights;
     CAmount nFees = 0;
     int nInputs = 0;

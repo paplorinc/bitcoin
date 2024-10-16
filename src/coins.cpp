@@ -9,7 +9,7 @@
 #include <random.h>
 #include <util/trace.h>
 
-#include <set>
+#include <unordered_set>
 #include <vector>
 
 bool CCoinsView::GetCoin(const COutPoint &outpoint, Coin &coin) const { return false; }
@@ -342,32 +342,45 @@ unsigned int CCoinsViewCache::GetCacheSize() const {
 
 bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
 {
-    if (!tx.IsCoinBase()) {
-        for (unsigned int i = 0; i < tx.vin.size(); i++) {
-            if (!HaveCoin(tx.vin[i].prevout)) { // all inputs should already be cached
-                return false;
-            }
+    if (!tx.IsCoinBase()) return true;
+    auto size = GetCacheSize();
+    for (unsigned int i = 0; i < tx.vin.size(); i++) {
+        if (!HaveCoin(tx.vin[i].prevout)) {
+            return false;
         }
     }
+    assert(size == GetCacheSize()); // all inputs should already be cached
     return true;
 }
 
-bool CCoinsViewCache::CacheBlockInputs(const CBlock& block) const
+bool CCoinsViewCache::CacheBlockInputsAndOutputs(const CBlock& block) const
 {
-    std::set<Txid> txids{}; // TODO unordered_set?
-    std::vector<COutPoint> inputs;
-    inputs.reserve(block.vtx.size());
-    for (auto tx : block.vtx) {
+    std::unordered_set<Txid, SaltedTxidHasher> txids;
+    std::vector<COutPoint> entries;
+    entries.reserve(2 * block.vtx.size()); // TODO: estimate better
+    for (auto& tx : block.vtx) {
         if (tx->IsCoinBase()) continue;
-        for (auto input : tx->vin) {
+        for (const auto& input : tx->vin) {
             const COutPoint& outpoint = input.prevout;
             if (txids.contains(outpoint.hash)) continue;
-            inputs.emplace_back(outpoint);
+            entries.emplace_back(outpoint);
         }
         txids.emplace(tx->GetHash());
     }
 
-    return inputs.empty() || GetUnspentCoins(inputs).size() == inputs.size();
+    return entries.empty() || GetUnspentCoins(entries).size() == entries.size();
+}
+
+bool CCoinsViewCache::HaveOutputs(const CBlock& block) const
+{
+    std::vector<COutPoint> outpoints;
+    outpoints.reserve(2 * block.vtx.size()); // TODO size
+    for (const auto& tx : block.vtx) {
+        for (uint32_t i = 0; i < tx->vout.size(); i++) {
+            outpoints.emplace_back(tx->GetHash(), i);
+        }
+    }
+    return !GetUnspentCoins(outpoints).empty();
 }
 
 void CCoinsViewCache::ReallocateCache()

@@ -478,7 +478,8 @@ public:
 
     //! Run an internal sanity check on the cache data structure. */
     void SanityCheck() const;
-    bool CacheBlockInputs(const CBlock& block) const;
+    bool CacheBlockInputsAndOutputs(const CBlock& block) const;
+    bool HaveOutputs(const CBlock& block) const;
 
 private:
     /**
