@@ -136,6 +136,9 @@ static rocksdb::Options GetOptions(size_t nCacheSize)
     rocksdb::Options options;
 
     options.IncreaseParallelism(std::max(1, static_cast<int>(std::thread::hardware_concurrency() * 0.8)));
+    options.unordered_write = true;
+//    options.use_direct_io_for_flush_and_compaction = true;
+//    options.use_direct_reads = true;
 
     //options.OptimizeLevelStyleCompaction(nCacheSize);
     //options.OptimizeForPointLookup(nCacheSize >> 20);
@@ -227,6 +230,9 @@ CDBWrapper::CDBWrapper(const DBParams& params)
 {
     DBContext().penv = nullptr;
     DBContext().readoptions.verify_checksums = true;
+    DBContext().readoptions.async_io = true;
+    DBContext().readoptions.optimize_multiget_for_io = true;
+    DBContext().readoptions.adaptive_readahead = true;
     DBContext().iteroptions.verify_checksums = true;
     DBContext().iteroptions.fill_cache = false;
     DBContext().syncoptions.sync = true;
@@ -241,7 +247,7 @@ CDBWrapper::CDBWrapper(const DBParams& params)
             rocksdb::Status result = rocksdb::DestroyDB(fs::PathToString(params.path), DBContext().options);
             HandleError(result);
         }
-        TryCreateDirectories(params.path);
+        TryCreateDirectories(params.path); // TODO
         LogPrintf("Opening RocksDB in %s\n", fs::PathToString(params.path));
     }
     // PathToString() return value is safe to pass to rocksdb open function,
