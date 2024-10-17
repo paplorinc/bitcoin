@@ -1957,7 +1957,6 @@ static bool VerifyWitnessProgram(const CScriptWitness& witness, int witversion, 
 
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror)
 {
-    return true; // TODO we're not testing script verification
     static const CScriptWitness emptyWitness;
     if (witness == nullptr) {
         witness = &emptyWitness;
