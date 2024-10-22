@@ -35,19 +35,34 @@ BOOST_FIXTURE_TEST_SUITE(cuckoocache_tests, BasicTestingSetup);
  *
  * There are no repeats in the first 200000 m_rng.rand256() calls
  */
+/* Test that no values not inserted into the cache are read out of it.
+ * Also test the return value behavior of insert().
+ */
 BOOST_AUTO_TEST_CASE(test_cuckoocache_no_fakes)
 {
     SeedRandomForTest(SeedRand::ZEROS);
     CuckooCache::cache<uint256, SignatureCacheHasher> cc{};
+
+    uint256 v = m_rng.rand256();
+    BOOST_CHECK(!cc.contains(v, false));
+
     size_t megabytes = 4;
     cc.setup_bytes(megabytes << 20);
+
+    BOOST_CHECK(!cc.insert(v));
+    BOOST_CHECK(cc.contains(v, false));
+
+    BOOST_CHECK(cc.insert(v));
+    BOOST_CHECK(cc.contains(v, false));
+
     for (int x = 0; x < 100000; ++x) {
-        cc.insert(m_rng.rand256());
+        BOOST_CHECK(!cc.insert(m_rng.rand256()));
     }
+
     for (int x = 0; x < 100000; ++x) {
         BOOST_CHECK(!cc.contains(m_rng.rand256(), false));
     }
-};
+}
 
 struct HitRateTest : BasicTestingSetup {
 /** This helper returns the hit rate when megabytes*load worth of entries are

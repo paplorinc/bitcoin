@@ -1944,7 +1944,11 @@ Chainstate::Chainstate(
     : m_mempool(mempool),
       m_blockman(blockman),
       m_chainman(chainman),
-      m_from_snapshot_blockhash(from_snapshot_blockhash) {}
+      m_from_snapshot_blockhash(from_snapshot_blockhash),
+      seen_outputs(std::make_unique<CuckooCache::cache<COutPoint, COutPointCacheHasher>>())
+{
+    seen_outputs->setup_bytes(1 << 20);
+}
 
 const CBlockIndex* Chainstate::SnapshotBase()
 {
@@ -2575,13 +2579,38 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
     // consensus change that ensures coinbases at those heights cannot
     // duplicate earlier coinbases.
     if (fEnforceBIP30 || pindex->nHeight >= BIP34_IMPLIES_BIP30_LIMIT) {
+        assert(seen_outputs); // TODO remove
         for (const auto& tx : block.vtx) {
             for (size_t o = 0; o < tx->vout.size(); o++) {
-                if (view.HaveCoin(COutPoint(tx->GetHash(), o))) {
-                    LogPrintf("ERROR: ConnectBlock(): tried to overwrite transaction\n");
-                    return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-BIP30");
+                COutPoint outpoint(tx->GetHash(), o);
+                if (!seen_outputs || seen_outputs->insert(outpoint)) {
+                    std::cout << "filter failed at pindex->nHeight: " << pindex->nHeight << std::endl;
+                    assert(false); // TODO
+                    if (view.HaveCoin(outpoint)) { // likely false positive
+                        LogPrintf("ERROR: ConnectBlock(): tried to overwrite transaction\n");
+                        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-BIP30");
+                    }
                 }
             }
+        }
+    } else {
+        if (pindex->nHeight > params.GetConsensus().BIP34Height) {
+            seen_outputs = nullptr; // we won't need these anymore until BIP34_IMPLIES_BIP30_LIMIT is reached
+        } else {
+            assert(IsBIP30Repeat(*pindex));
+            assert(pindex->nHeight == 91842 || pindex->nHeight == 91880);
+            assert(block_hash == uint256{"00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec"}
+                || block_hash == uint256{"00000000000743f190a18c5577a3c2d2a1f610ae9601ac046a38084ccb7cd721"});
+            bool found = false;
+            for (const auto& tx : block.vtx) {
+                for (size_t o = 0; o < tx->vout.size(); o++) {
+                    found = found || seen_outputs->contains(COutPoint(tx->GetHash(), o), false);
+                }
+            }
+            if (!found) {
+                std::cout << "filter failed at pindex->nHeight: " << pindex->nHeight << std::endl;
+            }
+            assert(found);
         }
     }
 

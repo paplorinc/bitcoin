@@ -393,8 +393,10 @@ public:
      * @post one of the following: All previously inserted elements and e are
      * now in the table, one previously inserted element is evicted from the
      * table, the entry attempted to be inserted is evicted.
+     *
+     * @returns true if element was already present, false if it was newly inserted
      */
-    inline void insert(Element e)
+    inline bool insert(Element e)
     {
         epoch_check();
         uint32_t last_loc = invalid();
@@ -406,7 +408,7 @@ public:
             if (table[loc] == e) {
                 please_keep(loc);
                 epoch_flags[loc] = last_epoch;
-                return;
+                return true;
             }
         for (uint8_t depth = 0; depth < depth_limit; ++depth) {
             // First try to insert to an empty slot, if one exists
@@ -416,7 +418,7 @@ public:
                 table[loc] = std::move(e);
                 please_keep(loc);
                 epoch_flags[loc] = last_epoch;
-                return;
+                return false;
             }
             /** Swap with the element at the location that was
             * not the last one looked at. Example:
@@ -442,6 +444,7 @@ public:
             // Recompute the locs -- unfortunately happens one too many times!
             locs = compute_hashes(e);
         }
+        return false;
     }
 
     /** contains iterates through the hash locations for a given element
@@ -473,6 +476,7 @@ public:
      */
     inline bool contains(const Element& e, const bool erase) const
     {
+        if (size == 0) return false;
         std::array<uint32_t, 8> locs = compute_hashes(e);
         for (const uint32_t loc : locs)
             if (table[loc] == e) {

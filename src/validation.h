@@ -504,6 +504,20 @@ enum class CoinsCacheSizeState
  * whereas block information and metadata independent of the current tip is
  * kept in `BlockManager`.
  */
+
+class COutPointCacheHasher
+{
+public:
+    template <uint8_t hash_select>
+    uint32_t operator()(const COutPoint& outpoint) const
+    {
+        static_assert(hash_select < 8, "COutPointCacheHasher only has 8 hashes available.");
+        uint32_t u;
+        std::memcpy(&u, outpoint.hash.ToUint256().begin() + 4 * hash_select, 4);
+        return u ^ outpoint.n;
+    }
+};
+
 class Chainstate
 {
 protected:
@@ -638,6 +652,8 @@ public:
         AssertLockHeld(::cs_main);
         return Assert(m_coins_views)->m_catcherview;
     }
+
+    std::unique_ptr<CuckooCache::cache<COutPoint, COutPointCacheHasher>> seen_outputs;
 
     //! Destructs all objects related to accessing the UTXO set.
     void ResetCoinsViews() { m_coins_views.reset(); }
