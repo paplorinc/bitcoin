@@ -14,13 +14,67 @@ using namespace std::string_literals;
 
 BOOST_FIXTURE_TEST_SUITE(streams_tests, BasicTestingSetup)
 
+BOOST_AUTO_TEST_CASE(xor_roundtrip_random_chunks)
+{
+    auto apply_random_xor_chunks{[](std::span<std::byte> write, const std::span<std::byte> key, FastRandomContext& rng) {
+        for (size_t offset{0}; offset < write.size();) {
+            const size_t chunk_size{1 + rng.randrange(write.size() - offset)};
+            util::Xor(write.subspan(offset, chunk_size), key, offset);
+            offset += chunk_size;
+        }
+    }};
+
+    FastRandomContext rng{/*fDeterministic=*/false};
+    for (size_t test{0}; test < 100; ++test) {
+        const size_t write_size{1 + rng.randrange(100U)};
+        const std::vector original{rng.randbytes<std::byte>(write_size)};
+        std::vector roundtrip{original};
+
+        std::vector key_bytes{rng.randbytes<std::byte>(8)};
+        uint64_t key;
+        std::memcpy(&key, key_bytes.data(), 8);
+
+        apply_random_xor_chunks(roundtrip, key_bytes, rng);
+        BOOST_CHECK_EQUAL(original != roundtrip, key != 0);
+        apply_random_xor_chunks(roundtrip, key_bytes, rng);
+        BOOST_CHECK(original == roundtrip);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(xor_bytes_reference)
+{
+    auto expected_xor{[](std::span<std::byte> write, const std::span<const std::byte> key, size_t key_offset) {
+        for (auto& b : write) {
+            b ^= key[key_offset++ % key.size()];
+        }
+    }};
+
+    FastRandomContext rng{/*fDeterministic=*/false};
+    for (size_t test{0}; test < 100; ++test) {
+        const size_t write_size{1 + rng.randrange(100U)};
+        const size_t key_offset{rng.randrange(3 * 8U)}; // Should wrap around
+
+        std::vector key_bytes{rng.randbytes<std::byte>(8)};
+        uint64_t key;
+        std::memcpy(&key, key_bytes.data(), 8);
+
+        std::vector expected{rng.randbytes<std::byte>(write_size)};
+        std::vector actual{expected};
+
+        expected_xor(expected, key_bytes, key_offset);
+        util::Xor(actual, key_bytes, key_offset);
+
+        BOOST_CHECK_EQUAL_COLLECTIONS(expected.begin(), expected.end(), actual.begin(), actual.end());
+    }
+}
+
 BOOST_AUTO_TEST_CASE(xor_file)
 {
     fs::path xor_path{m_args.GetDataDirBase() / "test_xor.bin"};
     auto raw_file{[&](const auto& mode) { return fsbridge::fopen(xor_path, mode); }};
     const std::vector<uint8_t> test1{1, 2, 3};
     const std::vector<uint8_t> test2{4, 5};
-    const std::vector<std::byte> xor_pat{std::byte{0xff}, std::byte{0x00}};
+    const std::vector xor_pat{std::byte{0xff}, std::byte{0x00}, std::byte{0xff}, std::byte{0x00}, std::byte{0xff}, std::byte{0x00}, std::byte{0xff}, std::byte{0x00}};
     {
         // Check errors for missing file
         AutoFile xor_file{raw_file("rb"), xor_pat};
@@ -73,7 +127,7 @@ BOOST_AUTO_TEST_CASE(streams_vector_writer)
 {
     unsigned char a(1);
     unsigned char b(2);
-    unsigned char bytes[] = { 3, 4, 5, 6 };
+    unsigned char bytes[] = {3, 4, 5, 6};
     std::vector<unsigned char> vch;
 
     // Each test runs twice. Serializing a second time at the same starting
@@ -225,7 +279,7 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
     // Degenerate case
     {
         DataStream ds{in};
-        ds.Xor({0x00, 0x00});
+        ds.Xor({0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         BOOST_CHECK_EQUAL(""s, ds.str());
     }
 
@@ -235,7 +289,7 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
     // Single character key
     {
         DataStream ds{in};
-        ds.Xor({0xff});
+        ds.Xor({0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
         BOOST_CHECK_EQUAL("\xf0\x0f"s, ds.str());
     }
 
@@ -247,7 +301,7 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
 
     {
         DataStream ds{in};
-        ds.Xor({0xff, 0x0f});
+        ds.Xor({0xff, 0x0f, 0xff, 0x0f, 0xff, 0x0f, 0xff, 0x0f});
         BOOST_CHECK_EQUAL("\x0f\x00"s, ds.str());
     }
 }
@@ -270,7 +324,7 @@ BOOST_AUTO_TEST_CASE(streams_buffered_file)
         BOOST_CHECK(false);
     } catch (const std::exception& e) {
         BOOST_CHECK(strstr(e.what(),
-                        "Rewind limit must be less than buffer size") != nullptr);
+                           "Rewind limit must be less than buffer size") != nullptr);
     }
 
     // The buffer is 25 bytes, allow rewinding 10 bytes.
@@ -359,7 +413,7 @@ BOOST_AUTO_TEST_CASE(streams_buffered_file)
         BOOST_CHECK(false);
     } catch (const std::exception& e) {
         BOOST_CHECK(strstr(e.what(),
-                        "BufferedFile::Fill: end of file") != nullptr);
+                           "BufferedFile::Fill: end of file") != nullptr);
     }
     // Attempting to read beyond the end sets the EOF indicator.
     BOOST_CHECK(bf.eof());
