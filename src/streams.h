@@ -13,35 +13,52 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <crypto/common.h>
 #include <cstddef>
 #include <cstdio>
+#include <cstring>
 #include <ios>
 #include <limits>
 #include <optional>
+#include <span>
 #include <stdint.h>
 #include <string.h>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace util {
-inline void Xor(Span<std::byte> write, Span<const std::byte> key, size_t key_offset = 0)
+inline void Xor64(void* write, const uint64_t key, const size_t n)
 {
-    if (key.size() == 0) {
-        return;
+    uint64_t raw;
+    memcpy(&raw, write, n);
+    raw ^= key;
+    memcpy(write, &raw, n);
+}
+inline void Xor(Span<std::byte> write, const uint64_t key)
+{
+    assert(key);
+    for (; write.size() >= 8; write = write.subspan(8)) {
+        Xor64(write.data(), key, 8);
     }
-    key_offset %= key.size();
-
-    for (size_t i = 0, j = key_offset; i != write.size(); i++) {
-        write[i] ^= key[j++];
-
-        // This potentially acts on very many bytes of data, so it's
-        // important that we calculate `j`, i.e. the `key` index in this
-        // way instead of doing a %, which would effectively be a division
-        // for each byte Xor'd -- much slower than need be.
-        if (j == key.size())
-            j = 0;
+    if (write.size()) {
+        Xor64(write.data(), key, write.size());
     }
+}
+inline uint64_t RotateKey(const uint64_t key, const size_t key_offset)
+{
+    static constexpr int rot_dir = std::endian::native == std::endian::little ? 1 : -1;
+    return std::rotr(key, 8 * key_offset * rot_dir);
+}
+inline void Xor(Span<std::byte> write, const uint64_t key, const size_t key_offset)
+{
+    if (key) Xor(write, RotateKey(key, key_offset));
+}
+inline void Xor(Span<std::byte> write, const Span<const std::byte> key_vector, const size_t key_offset = 0)
+{
+    assert(key_vector.size() == 8);
+    uint64_t key;
+    memcpy(&key, key_vector.data(), 8);
+    Xor(write, key, key_offset);
 }
 } // namespace util
 
@@ -275,6 +292,7 @@ public:
      */
     void Xor(const std::vector<unsigned char>& key)
     {
+        assert(key.size() == 8);
         util::Xor(MakeWritableByteSpan(*this), MakeByteSpan(key));
     }
 };
@@ -393,7 +411,7 @@ protected:
     std::optional<int64_t> m_position;
 
 public:
-    explicit AutoFile(std::FILE* file, std::vector<std::byte> data_xor={});
+    explicit AutoFile(std::FILE* file, std::vector<std::byte> data_xor = {8, std::byte{0x00}});
 
     ~AutoFile() { fclose(); }
 
@@ -425,7 +443,11 @@ public:
     bool IsNull() const { return m_file == nullptr; }
 
     /** Continue with a different XOR key */
-    void SetXor(std::vector<std::byte> data_xor) { m_xor = data_xor; }
+    void SetXor(std::vector<std::byte> data_xor)
+    {
+        assert(data_xor.size() == 8);
+        m_xor = data_xor;
+    }
 
     /** Implementation detail, only used internally. */
     std::size_t detail_fread(Span<std::byte> dst);
