@@ -254,23 +254,13 @@ CDBWrapper::CDBWrapper(const DBParams& params)
         LogPrintf("Finished database compaction of %s\n", fs::PathToString(params.path));
     }
 
-    // The base-case obfuscation key, which is a noop.
-    obfuscate_key = std::vector<unsigned char>(OBFUSCATE_KEY_NUM_BYTES, '\000');
-
-    bool key_exists = Read(OBFUSCATE_KEY_KEY, obfuscate_key);
-
-    if (!key_exists && params.obfuscate && IsEmpty()) {
-        // Initialize non-degenerate obfuscation if it won't upset
-        // existing, non-obfuscated data.
-        std::vector<unsigned char> new_key = CreateObfuscateKey();
-
-        // Write `new_key` so we don't obfuscate the key with itself
-        Write(OBFUSCATE_KEY_KEY, new_key);
-        obfuscate_key = new_key;
-
+    obfuscate_key = std::vector<unsigned char>(OBFUSCATE_KEY_NUM_BYTES, '\000'); // needed for unobfuscated Read
+    if (bool key_exists = Read(OBFUSCATE_KEY_KEY, obfuscate_key); !key_exists && params.obfuscate && IsEmpty()) {
+        // Initialize non-degenerate obfuscation if it won't upset existing, non-obfuscated data.
+        obfuscate_key = CreateObfuscateKey();
+        Write(OBFUSCATE_KEY_KEY, obfuscate_key);
         LogPrintf("Wrote new obfuscate key for %s: %s\n", fs::PathToString(params.path), HexStr(obfuscate_key));
     }
-
     LogPrintf("Using obfuscation key for %s: %s\n", fs::PathToString(params.path), HexStr(obfuscate_key));
 }
 

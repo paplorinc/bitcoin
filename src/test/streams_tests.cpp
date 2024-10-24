@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(xor_bytes)
         std::vector actual{expected};
 
         expected_xor(expected, key_vector, key_offset);
-        util::Xor(actual, key_vector, key_offset);
+        util::Xor(actual, key, key_offset);
 
         BOOST_CHECK_EQUAL_COLLECTIONS(expected.begin(), expected.end(), actual.begin(), actual.end());
     }
