@@ -1256,13 +1256,11 @@ static void XorHistogram(benchmark::Bench& bench)
     assert(total_bytes == 4'317'223);
 
     auto key{frc.rand64()};
-    std::vector<std::byte> key_bytes{8};
-    std::memcpy(key_bytes.data(), &key, 8);
 
     bench.batch(total_bytes).unit("byte").run([&] {
         for (size_t offset = 0; offset < 10; ++offset) {
             for (auto& data : test_data) {
-                util::Xor(data, key_bytes, offset);
+                util::Xor(data, key, offset);
             }
         }
         ankerl::nanobench::doNotOptimizeAway(test_data);

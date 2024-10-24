@@ -16,7 +16,7 @@ BOOST_FIXTURE_TEST_SUITE(streams_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(xor_roundtrip_random_chunks)
 {
-    auto apply_random_xor_chunks = [](std::span<std::byte> write, const std::span<std::byte> key, FastRandomContext& rng) {
+    auto apply_random_xor_chunks = [](std::span<std::byte> write, const uint64_t key, FastRandomContext& rng) {
         for (size_t offset{0}; offset < write.size();) {
             const size_t chunk_size{1 + rng.randrange(write.size() - offset + 1)};
             util::Xor(write.subspan(offset, chunk_size), key, offset);
@@ -30,12 +30,10 @@ BOOST_AUTO_TEST_CASE(xor_roundtrip_random_chunks)
     std::vector roundtrip{original};
 
     const uint64_t key{rng.rand64()};
-    std::vector<std::byte> key_vector(8);
-    std::memcpy(key_vector.data(), &key, 8);
 
-    apply_random_xor_chunks(roundtrip, key_vector, rng);
+    apply_random_xor_chunks(roundtrip, key, rng);
     BOOST_CHECK(original != roundtrip);
-    apply_random_xor_chunks(roundtrip, key_vector, rng);
+    apply_random_xor_chunks(roundtrip, key, rng);
     BOOST_CHECK(original == roundtrip);
 }
 
@@ -60,7 +58,7 @@ BOOST_AUTO_TEST_CASE(xor_bytes_reference)
         std::vector actual{expected};
 
         expected_xor(expected, key_vector, key_offset);
-        util::Xor(actual, key_vector, key_offset);
+        util::Xor(actual, key, key_offset);
 
         BOOST_CHECK_EQUAL_COLLECTIONS(expected.begin(), expected.end(), actual.begin(), actual.end());
     }
