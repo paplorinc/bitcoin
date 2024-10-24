@@ -672,7 +672,7 @@ CBlockFileInfo* BlockManager::GetBlockFileInfo(size_t n)
 bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, uint32_t blockundo_size, FlatFilePos& pos, const uint256& hashBlock) const
 {
     // Open history file to append
-    BufferedWriteOnlyFile fileout{m_undo_file_seq, pos, m_xor_key};
+    BufferedWriteOnlyFile fileout{m_undo_file_seq, pos, m_obfuscation};
     if (fileout.IsNull()) {
         LogError("%s: OpenUndoFile failed\n", __func__);
         return false;
@@ -700,7 +700,7 @@ bool BlockManager::UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex& in
     const FlatFilePos pos{WITH_LOCK(::cs_main, return index.GetUndoPos())};
 
     // Open history file to read
-    BufferedReadOnlyFile filein{m_undo_file_seq, pos, m_xor_key};
+    BufferedReadOnlyFile filein{m_undo_file_seq, pos, m_obfuscation};
     if (filein.IsNull()) {
         LogError("%s: OpenUndoFile failed for %s\n", __func__, pos.ToString());
         return false;
@@ -814,13 +814,13 @@ void BlockManager::UnlinkPrunedFiles(const std::set<int>& setFilesToPrune) const
 
 AutoFile BlockManager::OpenBlockFile(const FlatFilePos& pos, bool fReadOnly) const
 {
-    return AutoFile{m_block_file_seq.Open(pos, fReadOnly), m_xor_key};
+    return AutoFile{m_block_file_seq.Open(pos, fReadOnly), m_obfuscation};
 }
 
 /** Open an undo file (rev?????.dat) */
 AutoFile BlockManager::OpenUndoFile(const FlatFilePos& pos, bool fReadOnly) const
 {
-    return AutoFile{m_undo_file_seq.Open(pos, fReadOnly), m_xor_key};
+    return AutoFile{m_undo_file_seq.Open(pos, fReadOnly), m_obfuscation};
 }
 
 fs::path BlockManager::GetBlockPosFilename(const FlatFilePos& pos) const
@@ -965,7 +965,7 @@ bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFileP
 bool BlockManager::WriteBlockToDisk(const CBlock& block, uint32_t block_size, FlatFilePos& pos) const
 {
     // Open history file to append
-    BufferedWriteOnlyFile fileout{m_block_file_seq, pos, m_xor_key};
+    BufferedWriteOnlyFile fileout{m_block_file_seq, pos, m_obfuscation};
     if (fileout.IsNull()) {
         LogError("%s: OpenBlockFile failed\n", __func__);
         return false;
@@ -1030,7 +1030,7 @@ bool BlockManager::ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos) cons
     block.SetNull();
 
     // Open history file to read
-    BufferedReadOnlyFile filein{m_block_file_seq, pos, m_xor_key};
+    BufferedReadOnlyFile filein{m_block_file_seq, pos, m_obfuscation};
     if (filein.IsNull()) {
         LogError("%s: OpenBlockFile failed for %s\n", __func__, pos.ToString());
         return false;
@@ -1135,7 +1135,7 @@ FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight)
     return blockPos;
 }
 
-static auto InitBlocksdirXorKey(const BlockManager::Options& opts)
+static Obfuscation InitBlocksdirXorKey(const BlockManager::Options& opts)
 {
     // Bytes are serialized without length indicator, so this is also the exact
     // size of the XOR-key file.
@@ -1172,12 +1172,12 @@ static auto InitBlocksdirXorKey(const BlockManager::Options& opts)
         };
     }
     LogInfo("Using obfuscation key for blocksdir *.dat files (%s): '%s'\n", fs::PathToString(opts.blocks_dir), HexStr(xor_key));
-    return std::vector<std::byte>{xor_key.begin(), xor_key.end()};
+    return Obfuscation{xor_key};
 }
 
 BlockManager::BlockManager(const util::SignalInterrupt& interrupt, Options opts)
     : m_prune_mode{opts.prune_target > 0},
-      m_xor_key{InitBlocksdirXorKey(opts)},
+      m_obfuscation{InitBlocksdirXorKey(opts)},
       m_opts{std::move(opts)},
       m_block_file_seq{FlatFileSeq{m_opts.blocks_dir, "blk", m_opts.fast_prune ? 0x4000 /* 16kB */ : BLOCKFILE_CHUNK_SIZE}},
       m_undo_file_seq{FlatFileSeq{m_opts.blocks_dir, "rev", UNDOFILE_CHUNK_SIZE}},
