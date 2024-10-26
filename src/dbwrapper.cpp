@@ -254,14 +254,18 @@ CDBWrapper::CDBWrapper(const DBParams& params)
         LogPrintf("Finished database compaction of %s\n", fs::PathToString(params.path));
     }
 
-    obfuscate_key = std::vector<unsigned char>(OBFUSCATE_KEY_NUM_BYTES, '\000'); // needed for unobfuscated Read
-    if (bool key_exists = Read(OBFUSCATE_KEY_KEY, obfuscate_key); !key_exists && params.obfuscate && IsEmpty()) {
+    obfuscate_key = 0; // needed for unobfuscated Read
+    std::vector<unsigned char> obfuscate_key_vector(OBFUSCATE_KEY_NUM_BYTES, '\000');
+    if (bool key_exists = Read(OBFUSCATE_KEY_KEY, obfuscate_key_vector); !key_exists && params.obfuscate && IsEmpty()) {
         // Initialize non-degenerate obfuscation if it won't upset existing, non-obfuscated data.
-        obfuscate_key = CreateObfuscateKey();
-        Write(OBFUSCATE_KEY_KEY, obfuscate_key);
-        LogPrintf("Wrote new obfuscate key for %s: %s\n", fs::PathToString(params.path), HexStr(obfuscate_key));
+        obfuscate_key_vector = CreateObfuscateKey();
+        Write(OBFUSCATE_KEY_KEY, obfuscate_key_vector);
+        LogPrintf("Wrote new obfuscate key for %s: %s\n", fs::PathToString(params.path), HexStr(obfuscate_key_vector));
     }
-    LogPrintf("Using obfuscation key for %s: %s\n", fs::PathToString(params.path), HexStr(obfuscate_key));
+
+    LogPrintf("Using obfuscation key for %s: %s\n", fs::PathToString(params.path), HexStr(obfuscate_key_vector));
+    std::memcpy(&obfuscate_key, MakeByteSpan(obfuscate_key_vector).data(), OBFUSCATE_KEY_NUM_BYTES);
+    obfuscate_key_vector.clear();
 }
 
 CDBWrapper::~CDBWrapper()
@@ -408,7 +412,7 @@ void CDBIterator::Next() { m_impl_iter->iter->Next(); }
 
 namespace dbwrapper_private {
 
-const std::vector<unsigned char>& GetObfuscateKey(const CDBWrapper &w)
+uint64_t GetObfuscateKey(const CDBWrapper &w)
 {
     return w.obfuscate_key;
 }

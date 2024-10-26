@@ -47,13 +47,6 @@ inline void Xor(Span<std::byte> write, const uint64_t key, const size_t key_offs
     const uint64_t normalized_key = std::rotr(key, 8 * key_offset);
     Xor(write, normalized_key);
 }
-inline void Xor(Span<std::byte> write, const Span<const std::byte> key_vector, const size_t key_offset = 0)
-{
-    assert(key_vector.size() == 8);
-    uint64_t key;
-    memcpy(&key, key_vector.data(), 8);
-    Xor(write, key, key_offset);
-}
 } // namespace util
 
 /* Minimal stream for overwriting and/or appending to an existing byte vector
@@ -272,7 +265,7 @@ public:
         return (*this);
     }
 
-    template<typename T>
+    template <typename T>
     DataStream& operator>>(T&& obj)
     {
         ::Unserialize(*this, obj);
@@ -284,10 +277,9 @@ public:
      *
      * @param[in] key    The key used to XOR the data in this stream.
      */
-    void Xor(const std::vector<unsigned char>& key)
+    void Xor(const uint64_t key)
     {
-        assert(key.size() == 8);
-        util::Xor(MakeWritableByteSpan(*this), MakeByteSpan(key));
+        if (key) util::Xor(MakeWritableByteSpan(*this), key);
     }
 };
 
@@ -401,11 +393,11 @@ class AutoFile
 {
 protected:
     std::FILE* m_file;
-    std::vector<std::byte> m_xor;
+    uint64_t m_xor;
     std::optional<int64_t> m_position;
 
 public:
-    explicit AutoFile(std::FILE* file, std::vector<std::byte> data_xor = {std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}});
+    explicit AutoFile(std::FILE* file, uint64_t data_xor = 0);
 
     ~AutoFile() { fclose(); }
 
@@ -437,11 +429,7 @@ public:
     bool IsNull() const { return m_file == nullptr; }
 
     /** Continue with a different XOR key */
-    void SetXor(std::vector<std::byte> data_xor)
-    {
-        assert(data_xor.size() == 8);
-        m_xor = data_xor;
-    }
+    void SetXor(const uint64_t data_xor) { m_xor = data_xor; }
 
     /** Implementation detail, only used internally. */
     std::size_t detail_fread(Span<std::byte> dst);
