@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(xor_file)
     auto raw_file{[&](const auto& mode) { return fsbridge::fopen(xor_path, mode); }};
     const std::vector<uint8_t> test1{1, 2, 3};
     const std::vector<uint8_t> test2{4, 5};
-    const std::vector xor_pat{std::byte{0xff}, std::byte{0x00}, std::byte{0xff}, std::byte{0x00}, std::byte{0xff}, std::byte{0x00}, std::byte{0xff}, std::byte{0x00}};
+    constexpr uint64_t xor_pat = 0x00ff00ff00ff00ff;
     {
         // Check errors for missing file
         AutoFile xor_file{raw_file("rb"), xor_pat};
@@ -279,21 +279,18 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
     // Degenerate case
     {
         DataStream ds{in};
-        ds.Xor({0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        ds.Xor(0);
         BOOST_CHECK_EQUAL(""s, ds.str());
     }
 
     in.push_back(std::byte{0x0f});
     in.push_back(std::byte{0xf0});
 
-    // Single character key
     {
         DataStream ds{in};
-        ds.Xor({0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff});
+        ds.Xor(0xffffffffffffffff);
         BOOST_CHECK_EQUAL("\xf0\x0f"s, ds.str());
     }
-
-    // Multi character key
 
     in.clear();
     in.push_back(std::byte{0xf0});
@@ -301,7 +298,7 @@ BOOST_AUTO_TEST_CASE(streams_serializedata_xor)
 
     {
         DataStream ds{in};
-        ds.Xor({0xff, 0x0f, 0xff, 0x0f, 0xff, 0x0f, 0xff, 0x0f});
+        ds.Xor(0x0fff0fff0fff0fff);
         BOOST_CHECK_EQUAL("\x0f\x00"s, ds.str());
     }
 }
