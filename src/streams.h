@@ -28,12 +28,12 @@
 
 namespace util {
 template<typename T>
-inline void XorInt(Span<std::byte> write, const T key, const size_t n)
+inline void XorInt(Span<std::byte> write, const uint64_t key, const size_t n)
 {
     assert(n <= write.size());
-    T raw;
+    T raw = 0;
     memcpy(&raw, write.data(), n);
-    raw ^= key;
+    raw ^= static_cast<T>(key);
     memcpy(write.data(), &raw, n);
 }
 inline void Xor(Span<std::byte> write, const uint64_t key)
@@ -53,19 +53,13 @@ inline void Xor(Span<std::byte> write, const uint64_t key)
 
 inline uint64_t RotateKey(const uint64_t key, const size_t key_offset)
 {
-    static constexpr int rot_dir = std::endian::native == std::endian::little ? 1 : -1;
-    return std::rotr(key, 8 * key_offset * rot_dir);
+    size_t key_rotation = 8 * key_offset;
+    if constexpr (std::endian::native == std::endian::big) key_rotation *= -1;
+    return std::rotr(key, key_rotation);
 }
 inline void Xor(Span<std::byte> write, const uint64_t key, const size_t key_offset)
 {
     if (key) Xor(write, RotateKey(key, key_offset));
-}
-inline void Xor(Span<std::byte> write, const Span<const std::byte> key_vector, const size_t key_offset = 0)
-{
-    assert(key_vector.size() == 8);
-    uint64_t key;
-    memcpy(&key, key_vector.data(), 8);
-    Xor(write, key, key_offset);
 }
 } // namespace util
 
@@ -285,7 +279,7 @@ public:
         return (*this);
     }
 
-    template<typename T>
+    template <typename T>
     DataStream& operator>>(T&& obj)
     {
         ::Unserialize(*this, obj);
@@ -297,10 +291,9 @@ public:
      *
      * @param[in] key    The key used to XOR the data in this stream.
      */
-    void Xor(const std::vector<unsigned char>& key)
+    void Xor(const uint64_t key)
     {
-        assert(key.size() == 8);
-        util::Xor(MakeWritableByteSpan(*this), MakeByteSpan(key));
+        if (key) util::Xor(MakeWritableByteSpan(*this), key);
     }
 };
 
@@ -414,11 +407,11 @@ class AutoFile
 {
 protected:
     std::FILE* m_file;
-    std::vector<std::byte> m_xor;
+    uint64_t m_xor;
     std::optional<int64_t> m_position;
 
 public:
-    explicit AutoFile(std::FILE* file, std::vector<std::byte> data_xor = {8, std::byte{0x00}});
+    explicit AutoFile(std::FILE* file, uint64_t data_xor = 0);
 
     ~AutoFile() { fclose(); }
 
@@ -450,11 +443,7 @@ public:
     bool IsNull() const { return m_file == nullptr; }
 
     /** Continue with a different XOR key */
-    void SetXor(std::vector<std::byte> data_xor)
-    {
-        assert(data_xor.size() == 8);
-        m_xor = data_xor;
-    }
+    void SetXor(const uint64_t data_xor) { m_xor = data_xor; }
 
     /** Implementation detail, only used internally. */
     std::size_t detail_fread(Span<std::byte> dst);
