@@ -1279,11 +1279,9 @@ static void AutoFileXor(benchmark::Bench& bench)
     FastRandomContext frc{/*fDeterministic=*/true};
     auto data{frc.randbytes<std::byte>(4'000'000)};
     auto key{frc.rand64()};
-    std::vector<std::byte> key_bytes(8);
-    std::memcpy(&key, key_bytes.data(), 8);
 
     const fs::path test_path = fs::temp_directory_path() / "xor_benchmark.dat";
-    AutoFile f{fsbridge::fopen(test_path, "wb+"), key_bytes};
+    AutoFile f{fsbridge::fopen(test_path, "wb+"), key};
     bench.batch(data.size()).unit("byte").run([&] {
         f.Truncate(0);
         f << data; // xor through serialization
