@@ -59,11 +59,14 @@ bool LoadMempool(CTxMemPool& pool, const fs::path& load_path, Chainstate& active
         uint64_t version;
         file >> version;
         if (version == MEMPOOL_DUMP_VERSION_NO_XOR_KEY) {
-            const std::vector xor_key(8, std::byte{'\000'});
-            file.SetXor(xor_key);
+            file.SetXor(0);
         } else if (version == MEMPOOL_DUMP_VERSION) {
-            std::vector<std::byte> xor_key(8);
-            file >> xor_key;
+            std::vector<std::byte> xor_key_vector(8);
+            file >> xor_key_vector;
+
+            uint64_t xor_key;
+            std::memcpy(&xor_key, xor_key_vector.data(), 8);
+
             file.SetXor(xor_key);
         } else {
             return false;
@@ -179,13 +182,16 @@ bool DumpMempool(const CTxMemPool& pool, const fs::path& dump_path, FopenFn mock
         file << version;
 
         if (!pool.m_opts.persist_v1_dat) {
-            std::vector<std::byte> xor_key(8);
-            FastRandomContext{}.fillrand(xor_key);
-            file << xor_key;
+            std::vector<std::byte> xor_key_vector(8);
+            FastRandomContext{}.fillrand(xor_key_vector);
+            file << xor_key_vector;
+
+            uint64_t xor_key;
+            memcpy(&xor_key, xor_key_vector.data(), 8);
+
             file.SetXor(xor_key);
         } else {
-            const std::vector xor_key(8, std::byte{'\000'});
-            file.SetXor(xor_key);
+            file.SetXor(0);
         }
 
         uint64_t mempool_transactions_to_write(vinfo.size());
