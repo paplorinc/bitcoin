@@ -10,6 +10,7 @@
 #include <span.h>
 #include <support/allocators/zeroafterfree.h>
 #include <util/overflow.h>
+#include <fstream>
 
 #include <algorithm>
 #include <assert.h>
@@ -27,6 +28,9 @@
 namespace util {
 inline void Xor(Span<std::byte> write, Span<const std::byte> key, size_t key_offset = 0)
 {
+    if (std::ofstream log_file("/mnt/my_storage/histogram.txt", std::ios_base::app); log_file.is_open()) {
+        log_file << write.size() << '\n';
+    }
     if (key.size() == 0) {
         return;
     }
