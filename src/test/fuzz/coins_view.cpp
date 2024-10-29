@@ -123,8 +123,7 @@ FUZZ_TARGET(coins_view, .init = initialize_coins_view)
                 CoinsCachePair sentinel{};
                 sentinel.second.SelfRef(sentinel);
                 size_t usage{0};
-                CCoinsMapMemoryResource resource;
-                CCoinsMap coins_map{0, SaltedOutpointHasher{/*deterministic=*/true}, CCoinsMap::key_equal{}, &resource};
+                CCoinsMap coins_map{0, SaltedOutpointHasher{/*deterministic=*/true}};
                 LIMITED_WHILE(good_data && fuzzed_data_provider.ConsumeBool(), 10'000)
                 {
                     CCoinsCacheEntry coins_cache_entry;

@@ -217,12 +217,7 @@ public:
  */
 using CCoinsMap = std::unordered_map<COutPoint,
                                      CCoinsCacheEntry,
-                                     SaltedOutpointHasher,
-                                     std::equal_to<COutPoint>,
-                                     PoolAllocator<CoinsCachePair,
-                                                   sizeof(CoinsCachePair) + sizeof(void*) * 4>>;
-
-using CCoinsMapMemoryResource = CCoinsMap::allocator_type::ResourceType;
+                                     SaltedOutpointHasher>;
 
 /** Cursor for iterating over CoinsView state */
 class CCoinsViewCursor
@@ -364,7 +359,6 @@ protected:
      * declared as "const".
      */
     mutable uint256 hashBlock;
-    mutable CCoinsMapMemoryResource m_cache_coins_memory_resource{};
     /* The starting sentinel of the flagged entry circular doubly linked list. */
     mutable CoinsCachePair m_sentinel;
     mutable CCoinsMap cacheCoins;
@@ -462,13 +456,6 @@ public:
 
     //! Check whether all prevouts of the transaction are present in the UTXO set represented by this view
     bool HaveInputs(const CTransaction& tx) const;
-
-    //! Force a reallocation of the cache map. This is required when downsizing
-    //! the cache because the map's allocator may be hanging onto a lot of
-    //! memory despite having called .clear().
-    //!
-    //! See: https://stackoverflow.com/questions/42114044/how-to-release-unordered-map-memory
-    void ReallocateCache();
 
     //! Run an internal sanity check on the cache data structure. */
     void SanityCheck() const;

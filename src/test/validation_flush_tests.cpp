@@ -139,8 +139,6 @@ BOOST_AUTO_TEST_CASE(getcoinscachesizestate)
             CoinsCacheSizeState::OK);
     }
 
-    // Flushing the view does take us back to OK because ReallocateCache() is called
-
     BOOST_CHECK_EQUAL(
         chainstate.GetCoinsCacheSizeState(MAX_COINS_CACHE_BYTES, 0),
         CoinsCacheSizeState::CRITICAL);

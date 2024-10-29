@@ -402,12 +402,11 @@ FUZZ_TARGET(coinscache_sim)
                 caches.back()->Sync();
             },
 
-            [&]() { // Flush + ReallocateCache.
+            [&]() {
                 // Apply to simulation data.
                 flush();
                 // Apply to real caches.
                 caches.back()->Flush();
-                caches.back()->ReallocateCache();
             },
 
             [&]() { // GetCacheSize

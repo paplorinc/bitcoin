@@ -621,8 +621,7 @@ void WriteCoinsViewEntry(CCoinsView& view, CAmount value, char flags)
 {
     CoinsCachePair sentinel{};
     sentinel.second.SelfRef(sentinel);
-    CCoinsMapMemoryResource resource;
-    CCoinsMap map{0, CCoinsMap::hasher{}, CCoinsMap::key_equal{}, &resource};
+    CCoinsMap map{0, CCoinsMap::hasher{}};
     auto usage{InsertCoinsMapEntry(map, sentinel, value, flags)};
     auto cursor{CoinsViewCacheCursor(usage, sentinel, map, /*will_erase=*/true)};
     BOOST_CHECK(view.BatchWrite(cursor, {}));
@@ -1094,31 +1093,6 @@ BOOST_FIXTURE_TEST_CASE(ccoins_flush_behavior, FlushTest)
         TestFlushBehavior(view.get(), base, caches, /*do_erasing_flush=*/false);
         TestFlushBehavior(view.get(), base, caches, /*do_erasing_flush=*/true);
     }
-}
-
-BOOST_AUTO_TEST_CASE(coins_resource_is_used)
-{
-    CCoinsMapMemoryResource resource;
-    PoolResourceTester::CheckAllDataAccountedFor(resource);
-
-    {
-        CCoinsMap map{0, CCoinsMap::hasher{}, CCoinsMap::key_equal{}, &resource};
-        BOOST_TEST(memusage::DynamicUsage(map) >= resource.ChunkSizeBytes());
-
-        map.reserve(1000);
-
-        // The resource has preallocated a chunk, so we should have space for at several nodes without the need to allocate anything else.
-        const auto usage_before = memusage::DynamicUsage(map);
-
-        COutPoint out_point{};
-        for (size_t i = 0; i < 1000; ++i) {
-            out_point.n = i;
-            map[out_point];
-        }
-        BOOST_TEST(usage_before == memusage::DynamicUsage(map));
-    }
-
-    PoolResourceTester::CheckAllDataAccountedFor(resource);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

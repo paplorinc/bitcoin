@@ -32,7 +32,7 @@ size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 
 CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn, bool deterministic) :
     CCoinsViewBacked(baseIn), m_deterministic(deterministic),
-    cacheCoins(0, SaltedOutpointHasher(/*deterministic=*/deterministic), CCoinsMap::key_equal{}, &m_cache_coins_memory_resource)
+    cacheCoins(0, SaltedOutpointHasher(/*deterministic=*/deterministic))
 {
     m_sentinel.second.SelfRef(m_sentinel);
 }
@@ -254,7 +254,6 @@ bool CCoinsViewCache::Flush() {
     bool fOk = base->BatchWrite(cursor, hashBlock);
     if (fOk) {
         cacheCoins.clear();
-        ReallocateCache();
     }
     cachedCoinsUsage = 0;
     return fOk;
@@ -302,16 +301,6 @@ bool CCoinsViewCache::HaveInputs(const CTransaction& tx) const
         }
     }
     return true;
-}
-
-void CCoinsViewCache::ReallocateCache()
-{
-    // Cache should be empty when we're calling this.
-    assert(cacheCoins.size() == 0);
-    cacheCoins.~CCoinsMap();
-    m_cache_coins_memory_resource.~CCoinsMapMemoryResource();
-    ::new (&m_cache_coins_memory_resource) CCoinsMapMemoryResource{};
-    ::new (&cacheCoins) CCoinsMap{0, SaltedOutpointHasher{/*deterministic=*/m_deterministic}, CCoinsMap::key_equal{}, &m_cache_coins_memory_resource};
 }
 
 void CCoinsViewCache::SanityCheck() const
