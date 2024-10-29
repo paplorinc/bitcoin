@@ -20,8 +20,8 @@ struct CacheSizes;
 
 struct ChainstateLoadOptions {
     CTxMemPool* mempool{nullptr};
-    bool block_tree_db_in_memory{false};
-    bool coins_db_in_memory{false};
+    bool block_tree_db_in_memory{true};
+    bool coins_db_in_memory{true};
     // Whether to wipe the block tree database when loading it. If set, this
     // will also set a reindexing flag so any existing block data files will be
     // scanned and added to the database.

@@ -36,7 +36,7 @@ struct DBParams {
     //! Configures various leveldb cache settings.
     size_t cache_bytes;
     //! If true, use leveldb's memory environment.
-    bool memory_only = false;
+    bool memory_only = true;
     //! If true, remove all existing data.
     bool wipe_data = false;
     //! If true, store data obfuscated via simple XOR. If false, XOR with a
