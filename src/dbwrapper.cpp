@@ -140,6 +140,7 @@ static leveldb::Options GetOptions(size_t nCacheSize)
     options.block_cache = leveldb::NewLRUCache(2 << 20);
     options.write_buffer_size = 2 << 20; // up to two write buffers may be held in memory simultaneously
     options.max_file_size = 16 << 20;
+    options.block_size = 2 << 10;
     options.filter_policy = leveldb::NewBloomFilterPolicy(10);
     options.compression = leveldb::kNoCompression;
     options.info_log = new CBitcoinLevelDBLogger();
