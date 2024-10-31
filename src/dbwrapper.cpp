@@ -137,7 +137,7 @@ static void SetMaxOpenFiles(leveldb::Options *options) {
 static leveldb::Options GetOptions(size_t nCacheSize)
 {
     leveldb::Options options;
-    options.block_cache = leveldb::NewLRUCache(1 << 20);
+    options.block_cache = leveldb::NewLRUCache(2 << 20);
     options.write_buffer_size = 2 << 20; // up to two write buffers may be held in memory simultaneously
     options.max_file_size = 16 << 20;
     options.filter_policy = leveldb::NewBloomFilterPolicy(10);
