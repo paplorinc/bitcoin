@@ -27,26 +27,25 @@
 #include <vector>
 
 namespace util {
-inline void Xor(Span<std::byte> write, uint64_t key)
+inline void Xor(std::span<std::byte> write, uint64_t key)
 {
     assert(key);
-    auto it = write.begin();
-    for (; write.size() >= 8 && it + 8 < write.end(); it += 8) {
-        uint64_t write64;
-        std::memcpy(&write64, it, 8);
-        write64 ^= key;
-        std::memcpy(it, &write64, 8);
+    for (; write.size() >= 8; write = write.subspan(8)) {
+        uint64_t raw;
+        memcpy(&raw, write.data(), 8);
+        raw ^= key;
+        memcpy(write.data(), &raw, 8);
     }
 
-    for (; it != write.end(); key >>= 8) {
-        *it++ ^= static_cast<std::byte>(key & 0xFF);
+    for (size_t i{0}; i < write.size(); ++i, key >>= 8) {
+        write[i] ^= static_cast<std::byte>(key & 0xFF);
     }
 }
-inline void Xor(Span<std::byte> write, const uint64_t key, const size_t key_offset)
+inline void Xor(std::span<std::byte> write, const uint64_t key, const size_t key_offset)
 {
     if (key == 0) return;
-    const uint64_t normalized_key = htole64_internal(std::rotr(le64toh_internal(key), 8 * key_offset));
-    Xor(write, normalized_key);
+    const uint64_t realigned_key = std::rotr(key, 8 * key_offset);
+    Xor(write, realigned_key);
 }
 inline void Xor(Span<std::byte> write, const Span<const std::byte> key_vector, const size_t key_offset = 0)
 {
