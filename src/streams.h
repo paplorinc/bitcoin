@@ -43,10 +43,10 @@ inline void Xor(Span<std::byte> write, const uint64_t key)
         XorInt<uint64_t>(write, key, 8);
     }
     switch (write.size()) {
-    case 0: return;
-    case 1: XorInt<uint8_t>(write, key, 1); return;
-    case 2: XorInt<uint16_t>(write, key, 2); return;
-    case 4: XorInt<uint32_t>(write, key, 4); return;
+    case 0: break;
+    case 1: XorInt<uint64_t>(write, key, 1); break;
+    case 2: XorInt<uint64_t>(write, key, 2); break;
+    case 4: XorInt<uint64_t>(write, key, 4); break;
     default: XorInt<uint64_t>(write, key, write.size());
     }
 }
