@@ -12,6 +12,43 @@
 
 using namespace std::string_literals;
 
+namespace test_util {
+template<typename T>
+inline void XorInt(Span<std::byte> write, const uint64_t key, const size_t n)
+{
+    assert(n <= write.size());
+    T raw;
+    memcpy(&raw, write.data(), n);
+    raw ^= static_cast<T>(key);
+    memcpy(write.data(), &raw, n);
+}
+inline void Xor(Span<std::byte> write, const uint64_t key)
+{
+    assert(key);
+    for (; write.size() >= 8; write = write.subspan(8)) {
+        XorInt<uint64_t>(write, key, 8);
+    }
+    switch (write.size()) {
+    case 0: return;
+    case 1: XorInt<uint8_t>(write, key, 1); return;
+    case 2: XorInt<uint16_t>(write, key, 2); return;
+    case 4: XorInt<uint32_t>(write, key, 4); return;
+    default: XorInt<uint64_t>(write, key, write.size());
+    }
+}
+
+inline uint64_t RotateKey(const uint64_t key, const size_t key_offset)
+{
+    size_t key_rotation = 8 * key_offset;
+    if constexpr (std::endian::native == std::endian::big) key_rotation *= -1;
+    return std::rotr(key, key_rotation);
+}
+inline void Xor(Span<std::byte> write, const uint64_t key, const size_t key_offset)
+{
+    if (key) Xor(write, RotateKey(key, key_offset));
+}
+}
+
 BOOST_FIXTURE_TEST_SUITE(streams_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(xor_roundtrip_random_chunks)
@@ -19,7 +56,7 @@ BOOST_AUTO_TEST_CASE(xor_roundtrip_random_chunks)
     auto apply_random_xor_chunks{[](std::span<std::byte> write, const uint64_t key, FastRandomContext& rng) {
         for (size_t offset{0}; offset < write.size();) {
             const size_t chunk_size{1 + rng.randrange(write.size() - offset)};
-            util::Xor(write.subspan(offset, chunk_size), key, offset);
+            test_util::Xor(write.subspan(offset, chunk_size), key, offset);
             offset += chunk_size;
         }
     }};
@@ -62,7 +99,7 @@ BOOST_AUTO_TEST_CASE(xor_bytes_reference)
         std::vector actual{expected};
 
         expected_xor(expected, key_bytes, key_offset);
-        util::Xor(actual, key, key_offset);
+        test_util::Xor(actual, key, key_offset);
 
         BOOST_CHECK_EQUAL_COLLECTIONS(expected.begin(), expected.end(), actual.begin(), actual.end());
     }

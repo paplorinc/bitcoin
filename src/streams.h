@@ -28,12 +28,12 @@
 
 namespace util {
 template<typename T>
-inline void XorInt(Span<std::byte> write, const T key, const size_t n)
+inline void XorInt(Span<std::byte> write, const uint64_t key, const size_t n)
 {
     assert(n <= write.size());
     T raw;
     memcpy(&raw, write.data(), n);
-    raw ^= key;
+    raw ^= static_cast<T>(key);
     memcpy(write.data(), &raw, n);
 }
 inline void Xor(Span<std::byte> write, const uint64_t key)
@@ -53,8 +53,9 @@ inline void Xor(Span<std::byte> write, const uint64_t key)
 
 inline uint64_t RotateKey(const uint64_t key, const size_t key_offset)
 {
-    static constexpr int rot_dir = std::endian::native == std::endian::little ? 1 : -1;
-    return std::rotr(key, 8 * key_offset * rot_dir);
+    size_t key_rotation = 8 * key_offset;
+    if constexpr (std::endian::native == std::endian::big) key_rotation *= -1;
+    return std::rotr(key, key_rotation);
 }
 inline void Xor(Span<std::byte> write, const uint64_t key, const size_t key_offset)
 {
