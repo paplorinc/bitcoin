@@ -74,7 +74,11 @@ public:
     void write(Span<const std::byte> src)
     {
         assert(nPos <= vchData.size());
-        size_t nOverwrite = std::min(src.size(), vchData.size() - nPos);
+        if (nPos + src.size() > vchData.capacity()) {
+            vchData.reserve(std::max(nPos + src.size(), (vchData.capacity() * 15) / 10));
+        }
+
+        const size_t nOverwrite = std::min(src.size(), vchData.size() - nPos);
         if (nOverwrite) {
             memcpy(vchData.data() + nPos, src.data(), nOverwrite);
         }
