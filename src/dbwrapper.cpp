@@ -257,7 +257,7 @@ CDBWrapper::CDBWrapper(const DBParams& params)
     obfuscate_key = 0; // needed for unobfuscated Read
     std::vector<unsigned char> obfuscate_key_vector(OBFUSCATE_KEY_NUM_BYTES, '\000');
     const bool key_missing = !Read(OBFUSCATE_KEY_KEY, obfuscate_key_vector);
-    if (key_missing && params.obfuscate && IsEmpty()) {
+    if (false) {
         // Initialize non-degenerate obfuscation if it won't upset existing, non-obfuscated data.
         const std::vector<unsigned char> new_key = CreateObfuscateKey();
 

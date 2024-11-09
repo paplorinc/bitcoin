@@ -1143,11 +1143,11 @@ static uint64_t InitBlocksdirXorKey(const BlockManager::Options& opts)
     // size of the XOR-key file.
     std::array<std::byte, 8> xor_key{};
 
-    if (opts.use_xor && fs::is_empty(opts.blocks_dir)) {
-        // Only use random fresh key when the boolean option is set and on the
-        // very first start of the program.
-        FastRandomContext{}.fillrand(xor_key);
-    }
+    // if (opts.use_xor && fs::is_empty(opts.blocks_dir)) {
+    //     // Only use random fresh key when the boolean option is set and on the
+    //     // very first start of the program.
+    //     FastRandomContext{}.fillrand(xor_key);
+    // }
 
     const fs::path xor_key_path{opts.blocks_dir / "xor.dat"};
     if (fs::exists(xor_key_path)) {
