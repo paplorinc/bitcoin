@@ -1166,6 +1166,54 @@ public:
     }
 };
 
+template<typename Params> inline void ser_writedata8(ParamsStream<SizeComputer&, Params>& s, uint8_t)
+{
+    // size_t prev = s.size();
+    // s.write(AsBytes(Span{&obj, 1}));
+    // assert(s.size() - prev == 1);
+    s.GetStream().seek(1);
+}
+template<typename Params> inline void ser_writedata16(ParamsStream<SizeComputer&, Params>& s, uint16_t)
+{
+    // size_t prev = s.size();
+    // obj = htole16_internal(obj);
+    // s.write(AsBytes(Span{&obj, 1}));
+    // assert(s.size() - prev == 2);
+    s.GetStream().seek(2);
+}
+template<typename Params> inline void ser_writedata16be(ParamsStream<SizeComputer&, Params>& s, uint16_t)
+{
+    // size_t prev = s.size();
+    // obj = htobe16_internal(obj);
+    // s.write(AsBytes(Span{&obj, 1}));
+    // assert(s.size() - prev == 2);
+    s.GetStream().seek(2);
+}
+template<typename Params> inline void ser_writedata32(ParamsStream<SizeComputer&, Params>& s, uint32_t)
+{
+    // size_t prev = s.size();
+    // obj = htole32_internal(obj);
+    // s.write(AsBytes(Span{&obj, 1}));
+    // assert(s.size() - prev == 4);
+    s.GetStream().seek(4);
+}
+template<typename Params> inline void ser_writedata32be(ParamsStream<SizeComputer&, Params>& s, uint32_t)
+{
+    // size_t prev = s.size();
+    // obj = htobe32_internal(obj);
+    // s.write(AsBytes(Span{&obj, 1}));
+    // assert(s.size() - prev == 4);
+    s.GetStream().seek(4);
+}
+template<typename Params> inline void ser_writedata64(ParamsStream<SizeComputer&, Params>& s, uint64_t)
+{
+    // size_t prev = s.size();
+    // obj = htole64_internal(obj);
+    // s.write(AsBytes(Span{&obj, 1}));
+    // assert(s.size() - prev == 8);
+    s.GetStream().seek(8);
+}
+
 /**
  * Explicit template deduction guide is required for single-parameter
  * constructor so Substream&& is treated as a forwarding reference, and
