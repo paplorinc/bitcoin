@@ -748,12 +748,11 @@ int V1Transport::readHeader(Span<const uint8_t> msg_bytes)
 int V1Transport::readData(Span<const uint8_t> msg_bytes)
 {
     AssertLockHeld(m_recv_mutex);
-    unsigned int nRemaining = hdr.nMessageSize - nDataPos;
-    unsigned int nCopy = std::min<unsigned int>(nRemaining, msg_bytes.size());
+    unsigned int nCopy = std::min<unsigned int>(hdr.nMessageSize - nDataPos, msg_bytes.size());
 
     if (vRecv.size() < nDataPos + nCopy) {
-        // Allocate up to 256 KiB ahead, but never more than the total message size.
-        vRecv.resize(std::min(hdr.nMessageSize, nDataPos + nCopy + 256 * 1024));
+        // Allocate beyond what we need for this write, but never more than the total message size
+        vRecv.resize(std::min(hdr.nMessageSize, nDataPos + nCopy + (512 << 10)));
     }
 
     hasher.Write(msg_bytes.first(nCopy));
