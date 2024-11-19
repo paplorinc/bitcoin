@@ -21,6 +21,18 @@
 #include <optional>
 #include <vector>
 
+static void SerializeBlockTest(benchmark::Bench& bench) {
+    CBlock block;
+    DataStream(benchmark::data::block413567) >> TX_WITH_WITNESS(block);
+
+    // Create output stream and verify first serialization matches input
+    bench.unit("block").run([&] {
+        DataStream output_stream;
+        output_stream << TX_WITH_WITNESS(block);
+        assert(output_stream.size() == benchmark::data::block413567.size());
+    });
+}
+
 // These are the two major time-sinks which happen after we have fully received
 // a block off the wire, but before we can relay the block on to peers using
 // compact block relay.
@@ -60,5 +72,14 @@ static void DeserializeAndCheckBlockTest(benchmark::Bench& bench)
     });
 }
 
+BENCHMARK(SerializeBlockTest, benchmark::PriorityLevel::HIGH);
 BENCHMARK(DeserializeBlockTest, benchmark::PriorityLevel::HIGH);
 BENCHMARK(DeserializeAndCheckBlockTest, benchmark::PriorityLevel::HIGH);
+
+/*
+|            ns/block |             block/s |    err% |     total | benchmark
+|--------------------:|--------------------:|--------:|----------:|:----------
+|        1,350,185.16 |              740.64 |    0.2% |     10.99 | `DeserializeAndCheckBlockTest`
+|        1,031,343.47 |              969.61 |    0.2% |     11.01 | `DeserializeBlockTest`
+|          355,079.94 |            2,816.27 |    0.9% |     10.90 | `SerializeBlockTest`
+*/
