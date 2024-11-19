@@ -43,22 +43,10 @@ setup_assumeutxo_snapshot_run() {
 prepare_assumeutxo_snapshot_run() {
   set -euxo pipefail
 
-  local commit="$1"
-  local TMP_DATADIR="$2"
-  local UTXO_PATH="$3"
-  local CONNECT_ADDRESS="$4"
-  local chain="$5"
-
-  # Handle last_commit tracking and flamegraph movement
-  if [ -e last_commit.txt ]; then
-    LAST_COMMIT=$(cat last_commit.txt)
-    if [ -e flamegraph.html ]; then
-      mv flamegraph.html "${LAST_COMMIT}"-flamegraph.html
-    fi
-  fi
-
-  # Store current commit
-  echo "${commit}" >last_commit.txt
+  local TMP_DATADIR="$1"
+  local UTXO_PATH="$2"
+  local CONNECT_ADDRESS="$3"
+  local chain="$4"
 
   # Run the actual preparation steps
   clean_datadir "${TMP_DATADIR}"
@@ -67,18 +55,23 @@ prepare_assumeutxo_snapshot_run() {
   build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" || true
 }
 
+# Executed after each timing run
+conclude_assumeutxo_snapshot_run() {
+  set -euxo pipefail
+
+  local commit="$1"
+
+  if [ -e flamegraph.html ]; then
+    mv flamegraph.html "${commit}"-flamegraph.html
+  fi
+}
+
 # Execute CMD after the completion of all benchmarking runs for each individual
 # command to be benchmarked.
 cleanup_assumeutxo_snapshot_run() {
   set -euxo pipefail
 
   local TMP_DATADIR="$1"
-
-  # Move current flamegraph if it exists
-  if [ -e flamegraph.html ]; then
-    CURRENT_COMMIT=$(cat last_commit.txt)
-    mv flamegraph.html "${CURRENT_COMMIT}"-flamegraph.html
-  fi
 
   # Clean up the datadir
   clean_datadir "${TMP_DATADIR}"
@@ -103,7 +96,8 @@ run_benchmark() {
   # Run hyperfine
   hyperfine \
     --setup "setup_assumeutxo_snapshot_run {commit} ${TMP_DATADIR}" \
-    --prepare "prepare_assumeutxo_snapshot_run {commit} ${TMP_DATADIR} ${UTXO_PATH} ${connect_address} ${chain}" \
+    --prepare "prepare_assumeutxo_snapshot_run ${TMP_DATADIR} ${UTXO_PATH} ${connect_address} ${chain}" \
+    --conclude "conclude_assumeutxo_snapshot_run {commit}" \
     --cleanup "cleanup_assumeutxo_snapshot_run ${TMP_DATADIR}" \
     --runs 1 \
     --show-output \
