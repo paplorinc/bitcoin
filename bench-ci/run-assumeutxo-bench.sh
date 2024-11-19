@@ -104,6 +104,7 @@ run_benchmark() {
   # Export functions so they can be used by hyperfine
   export -f setup_assumeutxo_snapshot_run
   export -f prepare_assumeutxo_snapshot_run
+  export -f conclude_assumeutxo_snapshot_run
   export -f cleanup_assumeutxo_snapshot_run
   export -f clean_datadir
   export -f clean_logs
