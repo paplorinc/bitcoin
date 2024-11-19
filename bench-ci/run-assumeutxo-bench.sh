@@ -65,8 +65,8 @@ prepare_assumeutxo_snapshot_run() {
   # Run the actual preparation steps
   clean_datadir "${TMP_DATADIR}"
   build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -stopatheight=1
-  build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}"
-  clean_logs "${TMP_DATADIR}" || true
+  build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" || true
+  clean_logs "${TMP_DATADIR}"
 }
 
 # Executed after each timing run
