@@ -25,6 +25,17 @@ clean_datadir() {
   fi
 }
 
+# Helper function to clear logs
+clean_logs() {
+  set -euxo pipefail
+
+  local TMP_DATADIR="$1"
+
+  if [ -e $TMP_DATADIR/debug.log ]; then
+    rm $TMP_DATADIR/debug.log
+  fi
+}
+
 # Execute CMD before each set of timing runs.
 setup_assumeutxo_snapshot_run() {
   set -euxo pipefail
@@ -51,6 +62,7 @@ prepare_assumeutxo_snapshot_run() {
   # Run the actual preparation steps
   clean_datadir "${TMP_DATADIR}"
   build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -stopatheight=1
+  clean_logs "${TMP_DATADIR}"
   # TODO: remove the or true here. It's a hack as we currently get unclean exit
   build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" || true
 }
