@@ -30,9 +30,12 @@ clean_logs() {
   set -euxo pipefail
 
   local TMP_DATADIR="$1"
+  local logfile="${TMP_DATADIR}/debug.log"
 
-  if [ -e $TMP_DATADIR/debug.log ]; then
-    rm $TMP_DATADIR/debug.log
+  echo "Checking for ${logfile}"
+  if [ -e "{$logfile}" ]; then
+    echo "Removing ${logfile}"
+    rm "${logfile}"
   fi
 }
 
@@ -62,9 +65,8 @@ prepare_assumeutxo_snapshot_run() {
   # Run the actual preparation steps
   clean_datadir "${TMP_DATADIR}"
   build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -stopatheight=1
-  clean_logs "${TMP_DATADIR}"
-  # TODO: remove the or true here. It's a hack as we currently get unclean exit
-  build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" || true
+  build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}"
+  clean_logs "${TMP_DATADIR}" || true
 }
 
 # Executed after each timing run
@@ -104,6 +106,7 @@ run_benchmark() {
   export -f prepare_assumeutxo_snapshot_run
   export -f cleanup_assumeutxo_snapshot_run
   export -f clean_datadir
+  export -f clean_logs
 
   # Run hyperfine
   hyperfine \
