@@ -106,6 +106,7 @@ run_benchmark() {
   export -f prepare_assumeutxo_snapshot_run
   export -f cleanup_assumeutxo_snapshot_run
   export -f clean_datadir
+  export -f clean_logs
 
   # Run hyperfine
   hyperfine \
