@@ -77,9 +77,17 @@ BENCHMARK(DeserializeBlockTest, benchmark::PriorityLevel::HIGH);
 BENCHMARK(DeserializeAndCheckBlockTest, benchmark::PriorityLevel::HIGH);
 
 /*
+Before:
 |            ns/block |             block/s |    err% |     total | benchmark
 |--------------------:|--------------------:|--------:|----------:|:----------
 |        1,350,185.16 |              740.64 |    0.2% |     10.99 | `DeserializeAndCheckBlockTest`
 |        1,031,343.47 |              969.61 |    0.2% |     11.01 | `DeserializeBlockTest`
 |          355,079.94 |            2,816.27 |    0.9% |     10.90 | `SerializeBlockTest`
+
+After:
+|            ns/block |             block/s |    err% |     total | benchmark
+|--------------------:|--------------------:|--------:|----------:|:----------
+|        1,312,111.25 |              762.13 |    0.7% |     10.87 | `DeserializeAndCheckBlockTest`
+|          997,010.74 |            1,003.00 |    0.5% |     10.94 | `DeserializeBlockTest`
+|          328,847.66 |            3,040.92 |    1.7% |     10.80 | `SerializeBlockTest`
 */

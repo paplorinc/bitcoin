@@ -69,6 +69,7 @@ public:
     template <typename... Args>
     VectorWriter(std::vector<unsigned char>& vchDataIn, size_t nPosIn, Args&&... args) : VectorWriter{vchDataIn, nPosIn}
     {
+        // TODO preallocate via SizeComputer
         ::SerializeMany(*this, std::forward<Args>(args)...);
     }
     void write(Span<const std::byte> src)

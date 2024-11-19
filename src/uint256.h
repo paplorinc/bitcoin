@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstring>
 #include <optional>
+#include <serialize.h>
 #include <string>
 #include <string_view>
 
@@ -111,11 +112,15 @@ public:
 
     constexpr uint64_t GetUint64(int pos) const { return ReadLE64(m_data.data() + pos * 8); }
 
-    template<typename Stream>
-    void Serialize(Stream& s) const
+    void Serialize(SizeComputer& s) const
     {
-        s << Span(m_data);
+        // const size_t prev = s.size();
+        // s << Span(m_data);
+        // assert(s.size() - prev == WIDTH);
+        s.seek(WIDTH);
     }
+    template<typename Params> void Serialize(ParamsStream<SizeComputer&, Params>& s) const { Serialize(s.GetStream()); }
+    template<typename Stream> void Serialize(Stream& s) const { s << Span(m_data); }
 
     template<typename Stream>
     void Unserialize(Stream& s)
