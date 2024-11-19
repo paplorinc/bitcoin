@@ -96,7 +96,7 @@ void SerializeToVector(Stream& s, const X&... args)
     SizeComputer sizecomp;
     SerializeMany(sizecomp, args...);
     WriteCompactSize(s, sizecomp.size());
-    SerializeMany(s, args...); // TODO preallocate?
+    SerializeMany(s, args...);
 }
 
 // Takes a stream and multiple arguments and unserializes them first as a vector then each object individually in the order provided in the arguments

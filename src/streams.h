@@ -67,10 +67,16 @@ public:
  * @param[in]  args  A list of items to serialize starting at nPosIn.
 */
     template <typename... Args>
-    VectorWriter(std::vector<unsigned char>& vchDataIn, size_t nPosIn, Args&&... args) : VectorWriter{vchDataIn, nPosIn}
+    VectorWriter(std::vector<unsigned char>& vchDataIn, size_t nPosIn, Args&&... args) : vchData{vchDataIn}, nPos{nPosIn}
     {
-        // TODO preallocate via SizeComputer
+        SizeComputer sizecomp;
+        ::SerializeMany(sizecomp, args...);
+        size_t new_size = nPosIn + sizecomp.size();
+        if (new_size > vchData.size())
+            vchData.resize(new_size);
+
         ::SerializeMany(*this, std::forward<Args>(args)...);
+        assert(nPos == new_size);
     }
     void write(Span<const std::byte> src)
     {
