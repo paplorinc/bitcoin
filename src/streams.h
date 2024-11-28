@@ -419,7 +419,10 @@ public:
     std::FILE* release()
     {
         std::FILE* ret{m_file};
-        m_file = nullptr;
+        if (!IsNull()) {
+            funlockfile(m_file);
+            m_file = nullptr;
+        }
         return ret;
     }
 
