@@ -75,13 +75,11 @@ public:
     void write(Span<const std::byte> src)
     {
         assert(nPos <= vchData.size());
-        size_t nOverwrite = std::min(src.size(), vchData.size() - nPos);
-        if (nOverwrite) {
-            memcpy(vchData.data() + nPos, src.data(), nOverwrite);
+        size_t new_size = nPos + src.size();
+        if (vchData.size() < new_size) {
+            vchData.resize(new_size);
         }
-        if (nOverwrite < src.size()) {
-            vchData.insert(vchData.end(), UCharCast(src.data()) + nOverwrite, UCharCast(src.end()));
-        }
+        memcpy(vchData.data() + nPos, UCharCast(src.data()), src.size());
         nPos += src.size();
     }
     template <typename T>
