@@ -618,6 +618,39 @@ BOOST_AUTO_TEST_CASE(streams_buffered_file_rand)
     fs::remove(streams_test_filename);
 }
 
+BOOST_AUTO_TEST_CASE(buffered_read_only_file_matches_autofile_random_content)
+{
+    const fs::path test_file{m_args.GetDataDirBase() / "buffered_file_test_random.bin"};
+    constexpr size_t file_size{10 << 20};
+    constexpr size_t max_read_length{100};
+
+    FastRandomContext rng{/*fDeterministic=*/false};
+    AutoFile{fsbridge::fopen(test_file, "wb")}.write(rng.randbytes<std::byte>(file_size));
+    AutoFile auto_file{fsbridge::fopen(test_file, "rb")};
+    AutoFile auto_file_for_buffered{fsbridge::fopen(test_file, "rb")};
+    BufferedReadOnlyFile buffered_file{auto_file_for_buffered};
+
+    for (size_t total_read{0}, read{0}; total_read < file_size; total_read += read) {
+        read = std::min(rng.randrange(max_read_length) + 1, file_size - total_read);
+
+        std::vector<std::byte> auto_file_buffer(read);
+        auto_file.read(auto_file_buffer);
+
+        std::vector<std::byte> buffered_file_buffer(read);
+        buffered_file.read(buffered_file_buffer);
+
+        BOOST_CHECK_EQUAL_COLLECTIONS(
+            auto_file_buffer.begin(), auto_file_buffer.end(),
+            buffered_file_buffer.begin(), buffered_file_buffer.end()
+        );
+    }
+    std::vector<std::byte> excess(1);
+    BOOST_CHECK_EXCEPTION(auto_file.read(excess), std::ios_base::failure, HasReason{"end of file"});
+    BOOST_CHECK_EXCEPTION(buffered_file.read(excess), std::ios_base::failure, HasReason{"end of file"});
+
+    fs::remove(test_file);
+}
+
 BOOST_AUTO_TEST_CASE(streams_hashed)
 {
     DataStream stream{};
