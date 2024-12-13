@@ -669,7 +669,7 @@ CBlockFileInfo* BlockManager::GetBlockFileInfo(size_t n)
     return &m_blockfile_info.at(n);
 }
 
-bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const uint256& hashBlock) const
+bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, uint32_t blockundo_size, FlatFilePos& pos, const uint256& hashBlock) const
 {
     // Open history file to append
     AutoFile fileout{OpenUndoFile(pos)};
@@ -679,8 +679,8 @@ bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos
     }
 
     // Write index header
-    unsigned int nSize = GetSerializeSize(blockundo);
-    fileout << GetParams().MessageStart() << nSize;
+    Assume(blockundo_size == GetSerializeSize(blockundo));
+    fileout << GetParams().MessageStart() << blockundo_size;
 
     // Write undo data
     long fileOutPos = fileout.tell();
@@ -993,11 +993,12 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
     // Write undo information to disk
     if (block.GetUndoPos().IsNull()) {
         FlatFilePos _pos;
-        if (!FindUndoPos(state, block.nFile, _pos, ::GetSerializeSize(blockundo) + 40)) {
+        const uint32_t blockundo_size{static_cast<uint32_t>(GetSerializeSize(blockundo))};
+        if (!FindUndoPos(state, block.nFile, _pos, blockundo_size + 40)) {
             LogError("%s: FindUndoPos failed\n", __func__);
             return false;
         }
-        if (!UndoWriteToDisk(blockundo, _pos, block.pprev->GetBlockHash())) {
+        if (!UndoWriteToDisk(blockundo, blockundo_size, _pos, block.pprev->GetBlockHash())) {
             return FatalError(m_opts.notifications, state, _("Failed to write undo data."));
         }
         // rev files are written in block height order, whereas blk files are written as blocks come in (often out of order)
