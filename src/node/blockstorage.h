@@ -175,7 +175,7 @@ private:
      * After this call, it will point to the beginning of the serialized CBlock data, after the separator fields
      * (BLOCK_SERIALIZATION_HEADER_SIZE)
      */
-    bool WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const;
+    bool WriteBlockToDisk(const CBlock& block, uint32_t block_size, FlatFilePos& pos) const;
     bool UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const uint256& hashBlock) const;
 
     /* Calculate the block/rev files to delete based on height specified by user with RPC command pruneblockchain */
