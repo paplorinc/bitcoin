@@ -963,7 +963,7 @@ bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFileP
     return true;
 }
 
-bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
+bool BlockManager::WriteBlockToDisk(const CBlock& block, uint32_t block_size, FlatFilePos& pos) const
 {
     // Open history file to append
     AutoFile fileout{OpenBlockFile(pos)};
@@ -973,8 +973,8 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
     }
 
     // Write index header
-    unsigned int nSize = GetSerializeSize(TX_WITH_WITNESS(block));
-    fileout << GetParams().MessageStart() << nSize;
+    Assume(block_size == GetSerializeSize(TX_WITH_WITNESS(block)));
+    fileout << GetParams().MessageStart() << block_size;
 
     // Write block
     long fileOutPos = fileout.tell();
@@ -1121,16 +1121,15 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
 
 FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight)
 {
-    unsigned int nBlockSize = ::GetSerializeSize(TX_WITH_WITNESS(block));
-    // Account for the 4 magic message start bytes + the 4 length bytes (8 bytes total,
-    // defined as BLOCK_SERIALIZATION_HEADER_SIZE)
-    nBlockSize += static_cast<unsigned int>(BLOCK_SERIALIZATION_HEADER_SIZE);
-    FlatFilePos blockPos{FindNextBlockPos(nBlockSize, nHeight, block.GetBlockTime())};
+    const uint32_t block_size{static_cast<uint32_t>(GetSerializeSize(TX_WITH_WITNESS(block)))};
+    // Account for the 4 magic message start bytes + the 4 length bytes
+    const uint32_t add_size{block_size + static_cast<uint32_t>(BLOCK_SERIALIZATION_HEADER_SIZE)};
+    FlatFilePos blockPos{FindNextBlockPos(add_size, nHeight, block.GetBlockTime())};
     if (blockPos.IsNull()) {
         LogError("%s: FindNextBlockPos failed\n", __func__);
         return FlatFilePos();
     }
-    if (!WriteBlockToDisk(block, blockPos)) {
+    if (!WriteBlockToDisk(block, block_size, blockPos)) {
         m_opts.notifications.fatalError(_("Failed to write block."));
         return FlatFilePos();
     }
