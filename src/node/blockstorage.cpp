@@ -672,7 +672,7 @@ CBlockFileInfo* BlockManager::GetBlockFileInfo(size_t n)
 bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, uint32_t blockundo_size, FlatFilePos& pos, const uint256& hashBlock) const
 {
     // Open history file to append
-    AutoFile fileout{OpenUndoFile(pos)};
+    BufferedWriteOnlyFile fileout{m_undo_file_seq, pos, m_xor_key};
     if (fileout.IsNull()) {
         LogError("%s: OpenUndoFile failed\n", __func__);
         return false;
@@ -965,7 +965,7 @@ bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFileP
 bool BlockManager::WriteBlockToDisk(const CBlock& block, uint32_t block_size, FlatFilePos& pos) const
 {
     // Open history file to append
-    AutoFile fileout{OpenBlockFile(pos)};
+    BufferedWriteOnlyFile fileout{m_block_file_seq, pos, m_xor_key};
     if (fileout.IsNull()) {
         LogError("%s: OpenBlockFile failed\n", __func__);
         return false;
