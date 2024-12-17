@@ -679,7 +679,6 @@ bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, uint32_t blockun
     }
 
     // Write index header
-    Assume(blockundo_size == GetSerializeSize(blockundo));
     fileout << GetParams().MessageStart() << blockundo_size;
 
     // Write undo data
@@ -973,7 +972,6 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, uint32_t block_size, Fl
     }
 
     // Write index header
-    Assume(block_size == GetSerializeSize(TX_WITH_WITNESS(block)));
     fileout << GetParams().MessageStart() << block_size;
 
     // Write block
