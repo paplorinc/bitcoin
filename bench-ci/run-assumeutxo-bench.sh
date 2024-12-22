@@ -33,7 +33,7 @@ clean_logs() {
   local logfile="${TMP_DATADIR}/debug.log"
 
   echo "Checking for ${logfile}"
-  if [ -e "{$logfile}" ]; then
+  if [ -e "${logfile}" ]; then
     echo "Removing ${logfile}"
     rm "${logfile}"
   fi
@@ -53,10 +53,13 @@ setup_assumeutxo_snapshot_run() {
   taskset -c 0-15 cmake -B build \
       -DBUILD_BENCH=OFF \
       -DBUILD_TESTS=OFF \
+      -DBUILD_TX=OFF \
+      -DBUILD_UTIL=OFF \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
       -DCMAKE_CXX_FLAGS="-fno-omit-frame-pointer" \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      -DINSTALL_MAN=OFF
   taskset -c 0-15 cmake --build build -j "$(nproc)"
   ccache -s
   clean_datadir "${TMP_DATADIR}"
