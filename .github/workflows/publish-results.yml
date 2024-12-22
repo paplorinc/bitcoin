@@ -21,10 +21,11 @@ jobs:
         with:
           ref: gh-pages
       - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          github-token: ${{ secrets.GH_PAT }}
-          run-id: ${{ github.event.workflow_run.id }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download ${{ github.event.workflow_run.id }} --repo ${{ github.repository }}
+
       - name: Extract artifacts
         run: |
           for network in ${NETWORKS//,/ }; do
@@ -262,5 +263,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr comment ${{ needs.build.outputs.pr-number }} --repo ${{ github.repository }} --body "📊 Benchmark results for this run (${{ github.event.workflow_run.id }}) will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/results/pr-${{ needs.build.outputs.pr-number }}/${{ github.event.workflow_run.id }}/index.html after the github pages \"build and deployment\" action has completed.
+          gh pr comment ${{ needs.build.outputs.pr-number }} \
+            --repo ${{ github.repository }} \
+            --body "📊 Benchmark results for this run (${{ github.event.workflow_run.id }}) will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/results/pr-${{ needs.build.outputs.pr-number }}/${{ github.event.workflow_run.id }}/index.html after the github pages \"build and deployment\" action has completed.
           🚀 Speedups: ${{ needs.build.outputs.speedups }}"
