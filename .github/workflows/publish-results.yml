@@ -21,10 +21,11 @@ jobs:
         with:
           ref: gh-pages
       - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          github-token: ${{ secrets.GH_PAT }}
-          run-id: ${{ github.event.workflow_run.id }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download ${{ github.event.workflow_run.id }} --repo ${{ github.repository }}
+
       - name: Extract artifacts
         run: |
           for network in ${NETWORKS//,/ }; do
@@ -50,7 +51,7 @@ jobs:
           script: |
             const fs = require('fs');
             const networks = process.env.NETWORKS.split(',');
-            let prNumber = 'main';
+            let prNumber = 'master';
             let runId;
 
             // First, extract metadata and get PR number
@@ -244,10 +245,8 @@ jobs:
           path: results
       - name: Commit and push to gh-pages
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add results/
-          git add index.html
+          git config --global -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com'
+          git add results/ index.html
           git commit -m "Update benchmark results from run ${{ github.event.workflow_run.id }}"
           git push origin gh-pages
   comment-pr:
@@ -258,11 +257,11 @@ jobs:
       actions: read
     steps:
       - name: Comment on PR
-        if: ${{ needs.build.outputs.pr-number != 'main' }}
-        uses: thollander/actions-comment-pull-request@v3.0.1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pr-number: ${{ needs.build.outputs.pr-number }}
-          message: |
-            📊 Benchmark results for this run (${{ github.event.workflow_run.id }}) will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/results/pr-${{ needs.build.outputs.pr-number }}/${{ github.event.workflow_run.id }}/index.html after the github pages "build and deployment" action has completed.
-            🚀 Speedups: ${{ needs.build.outputs.speedups }}
+        if: ${{ needs.build.outputs.pr-number != 'master' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ needs.build.outputs.pr-number }} \
+            --repo ${{ github.repository }} \
+            --body "📊 Benchmark results for this run (${{ github.event.workflow_run.id }}) will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/results/pr-${{ needs.build.outputs.pr-number }}/${{ github.event.workflow_run.id }}/index.html after the github pages \"build and deployment\" action has completed.
+          🚀 Speedups: ${{ needs.build.outputs.speedups }}"
