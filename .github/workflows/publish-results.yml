@@ -259,10 +259,8 @@ jobs:
     steps:
       - name: Comment on PR
         if: ${{ needs.build.outputs.pr-number != 'main' }}
-        uses: thollander/actions-comment-pull-request@v3.0.1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pr-number: ${{ needs.build.outputs.pr-number }}
-          message: |
-            📊 Benchmark results for this run (${{ github.event.workflow_run.id }}) will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/results/pr-${{ needs.build.outputs.pr-number }}/${{ github.event.workflow_run.id }}/index.html after the github pages "build and deployment" action has completed.
-            🚀 Speedups: ${{ needs.build.outputs.speedups }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ needs.build.outputs.pr-number }} --repo ${{ github.repository }} --body "📊 Benchmark results for this run (${{ github.event.workflow_run.id }}) will be available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/results/pr-${{ needs.build.outputs.pr-number }}/${{ github.event.workflow_run.id }}/index.html after the github pages \"build and deployment\" action has completed.
+          🚀 Speedups: ${{ needs.build.outputs.speedups }}"
