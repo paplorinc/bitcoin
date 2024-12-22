@@ -245,10 +245,8 @@ jobs:
           path: results
       - name: Commit and push to gh-pages
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add results/
-          git add index.html
+          git config --global -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com'
+          git add results/ index.html
           git commit -m "Update benchmark results from run ${{ github.event.workflow_run.id }}"
           git push origin gh-pages
   comment-pr:
