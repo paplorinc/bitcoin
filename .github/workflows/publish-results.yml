@@ -50,7 +50,7 @@ jobs:
           script: |
             const fs = require('fs');
             const networks = process.env.NETWORKS.split(',');
-            let prNumber = 'main';
+            let prNumber = 'master';
             let runId;
 
             // First, extract metadata and get PR number
@@ -258,7 +258,7 @@ jobs:
       actions: read
     steps:
       - name: Comment on PR
-        if: ${{ needs.build.outputs.pr-number != 'main' }}
+        if: ${{ needs.build.outputs.pr-number != 'master' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
