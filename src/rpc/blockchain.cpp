@@ -179,9 +179,9 @@ UniValue blockToJSON(BlockManager& blockman, const CBlock& block, const CBlockIn
 {
     UniValue result = blockheaderToJSON(tip, blockindex);
 
-    result.pushKV("strippedsize", (int)::GetSerializeSize(TX_NO_WITNESS(block)));
-    result.pushKV("size", (int)::GetSerializeSize(TX_WITH_WITNESS(block)));
-    result.pushKV("weight", (int)::GetBlockWeight(block));
+    result.pushKV("strippedsize", (int)block.SizeNoWitness());
+    result.pushKV("size", (int)block.SizeWithWitness());
+    result.pushKV("weight", GetBlockWeight(block));
     UniValue txs(UniValue::VARR);
 
     switch (verbosity) {
