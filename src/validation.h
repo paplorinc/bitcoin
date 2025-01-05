@@ -487,7 +487,7 @@ enum class CoinsCacheSizeState
     CRITICAL = 3,
     //! The coins cache is at >= 99% capacity.
     NEAR_CRITICAL = 2,
-    //! The cache is at >= 90% capacity.
+    //! The cache is at >= 80% capacity.
     LARGE = 1,
     OK = 0
 };

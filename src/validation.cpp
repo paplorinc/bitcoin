@@ -2795,8 +2795,8 @@ size_t Chainstate::GetCoinsCacheSizeTotalSpace(
 static size_t GetCoinsCacheSizeLargeThreshold(size_t total_space_bytes)
 {
     //! No need to periodic flush if at least this much space still available.
-    static constexpr int64_t MAX_BLOCK_COINSDB_USAGE_BYTES = 10 << 20;  // 10MB
-    return std::max<int64_t>((9 * total_space_bytes) / 10,
+    static constexpr int64_t MAX_BLOCK_COINSDB_USAGE_BYTES = 20 << 20;  // 20MiB
+    return std::max<int64_t>((8 * total_space_bytes) / 10,
         static_cast<int64_t>(total_space_bytes) - MAX_BLOCK_COINSDB_USAGE_BYTES);
 }
 
