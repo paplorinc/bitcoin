@@ -362,6 +362,7 @@ public:
 class CCoinsViewCache : public CCoinsViewBacked
 {
 private:
+    const size_t m_coinstip_cache_size_bytes;
     const bool m_deterministic;
 
 protected:
@@ -379,7 +380,7 @@ protected:
     mutable size_t cachedCoinsUsage{0};
 
 public:
-    CCoinsViewCache(CCoinsView *baseIn, bool deterministic = false);
+    CCoinsViewCache(CCoinsView *baseIn, size_t coinstip_cache_size_bytes = 0, bool deterministic = false);
 
     /**
      * By deleting the copy constructor, we prevent accidentally using it when one intends to create a cache on top of a base cache.
