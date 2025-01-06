@@ -139,8 +139,8 @@ jobs:
                       <div class="mb-8">
                         <h3 class="text-lg font-semibold mb-4 capitalize">
                           ${network} Results
-                          ${combinedResults.speedups[network] ? 
-                            `<span class="text-sm font-normal ml-2">(${combinedResults.speedups[network]}% speedup)</span>` 
+                          ${combinedResults.speedups[network] ?
+                            `<span class="text-sm font-normal ml-2">(${combinedResults.speedups[network]}% speedup)</span>`
                             : ''}
                         </h3>
                         <div class="overflow-x-auto">
@@ -234,7 +234,7 @@ jobs:
             const speedupString = Object.entries(combinedResults.speedups)
               .map(([network, speedup]) => `${network}: ${speedup}%`)
               .join(', ');
-            
+
             core.setOutput('result-url', resultUrl);
             core.setOutput('speedups', speedupString);
             core.setOutput('pr-number', prNumber);
@@ -245,7 +245,8 @@ jobs:
           path: results
       - name: Commit and push to gh-pages
         run: |
-          git config --global -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com'
+          git config --global user.name='github-actions[bot]'
+          git config --global user.email='github-actions[bot]@users.noreply.github.com'
           git add results/ index.html
           git commit -m "Update benchmark results from run ${{ github.event.workflow_run.id }}"
           git push origin gh-pages
