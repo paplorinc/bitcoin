@@ -49,14 +49,15 @@ setup_assumeutxo_snapshot_run() {
   git checkout "${commit}"
   ccache -z
   ccache -s
-  cmake -B build \
+  # Use all cores (0-15) for the build phase
+  taskset -c 0-15 cmake -B build \
       -DBUILD_BENCH=OFF \
       -DBUILD_TESTS=OFF \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DCMAKE_CXX_FLAGS="-fno-omit-frame-pointer" \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-  cmake --build build -j "$(nproc)"
+  taskset -c 0-15 cmake --build build -j "$(nproc)"
   ccache -s
   clean_datadir "${TMP_DATADIR}"
 }
@@ -72,8 +73,8 @@ prepare_assumeutxo_snapshot_run() {
 
   # Run the actual preparation steps
   clean_datadir "${TMP_DATADIR}"
-  build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -stopatheight=1
-  build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" || true
+  taskset -c 0-15 build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -stopatheight=1
+  taskset -c 0-15 build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${chain}" -dbcache=16000 -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" || true
   clean_logs "${TMP_DATADIR}"
 }
 
