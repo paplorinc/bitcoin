@@ -4,7 +4,42 @@ on:
     branches:
       - master
 jobs:
+  build-binaries:
+    runs-on: [self-hosted, linux, x64]
+    env:
+      NIX_PATH: nixpkgs=channel:nixos-unstable
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Fetch base commit
+        run: |
+          echo "CHECKOUT_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+      - name: Setup ccache
+        run: |
+          mkdir -p /data/ccache
+          export CCACHE_DIR=/data/ccache
+          export CCACHE_MAXSIZE=50G
+          ccache -M 50G
+          ccache -s
+      - name: Build both binaries
+        env:
+          CCACHE_DIR: /data/ccache
+        run: |
+          mkdir -p ${{ runner.temp }}/binaries
+          nix-shell --command "just build-assumeutxo-binaries $BASE_SHA $CHECKOUT_COMMIT"
+          cp build-base/src/bitcoind ${{ runner.temp }}/binaries/bitcoind-base
+          cp build-head/src/bitcoind ${{ runner.temp }}/binaries/bitcoind-head
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitcoind-binaries
+          path: ${{ runner.temp }}/binaries/
   assumeutxo:
+    needs: build-binaries
     strategy:
       matrix:
         include:
@@ -31,29 +66,29 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: bitcoind-binaries
+          path: ${{ runner.temp }}/binaries
+      - name: Set binary permissions
+        run: |
+          chmod +x ${{ runner.temp }}/binaries/bitcoind-base
+          chmod +x ${{ runner.temp }}/binaries/bitcoind-head
       - name: Fetch base commit
         run: |
-          # Export the commit hash for use in later steps
           echo "CHECKOUT_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
-          # Fetch down to the base SHA for the base benchmark comparison as we
-          # only checked out to depth 1
           git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
-      - name: Setup ccache
-        run: |
-          mkdir -p /data/ccache
-          export CCACHE_DIR=/data/ccache
-          export CCACHE_MAXSIZE=50G
-          ccache -M 50G
-          ccache -s
       - name: Run AssumeUTXO ${{ matrix.network }}
         env:
           TMP_DATADIR: "${{ runner.temp }}/base_datadir"
-          CCACHE_DIR: /data/ccache
+          BINARIES_DIR: "${{ runner.temp }}/binaries"
         run: |
           env
           mkdir -p "$TMP_DATADIR"
-          nix-shell --command "just run-assumeutxo-${{ matrix.network }}-ci $BASE_SHA $CHECKOUT_COMMIT $TMP_DATADIR $UTXO_PATH ${{ runner.temp }}/results.json ${{ matrix.dbcache }} ${{ runner.temp }}/pngs"
+          CMD="nix-shell --command \"just run-assumeutxo-${{ matrix.network }}-ci $BASE_SHA $CHECKOUT_COMMIT $TMP_DATADIR $UTXO_PATH ${{ runner.temp }}/results.json ${{ matrix.dbcache }} ${{ runner.temp }}/pngs $BINARIES_DIR\""
+          echo "Running command: $CMD"
+          eval "$CMD"
       - uses: actions/upload-artifact@v4
         with:
           name: result-${{ matrix.network }}

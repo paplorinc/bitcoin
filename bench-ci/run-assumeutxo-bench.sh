@@ -43,25 +43,8 @@ clean_logs() {
 setup_assumeutxo_snapshot_run() {
   set -euxo pipefail
 
-  local commit="$1"
-  local TMP_DATADIR="$2"
-
-  git checkout "${commit}"
-  ccache -z
-  ccache -s
-  # Use all cores (0-15) for the build phase
-  taskset -c 0-15 cmake -B build \
-      -DBUILD_BENCH=OFF \
-      -DBUILD_TESTS=OFF \
-      -DBUILD_TX=OFF \
-      -DBUILD_UTIL=OFF \
-      -DINSTALL_MAN=OFF \
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-      -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-      -DCMAKE_CXX_FLAGS="-fno-omit-frame-pointer"
-  taskset -c 0-15 cmake --build build -j "$(nproc)"
-  ccache -s
+  local TMP_DATADIR="$1"
+  local commit="$2"
   clean_datadir "${TMP_DATADIR}"
 }
 
@@ -74,11 +57,14 @@ prepare_assumeutxo_snapshot_run() {
   local CONNECT_ADDRESS="$3"
   local CHAIN="$4"
   local DBCACHE="$5"
+  local commit="$6"
+  local BINARIES_DIR="$7"
 
   # Run the actual preparation steps
   clean_datadir "${TMP_DATADIR}"
-  taskset -c 0-15 build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${CHAIN}" -stopatheight=1 -printtoconsole=0
-  taskset -c 0-15 build/src/bitcoind -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${CHAIN}" -dbcache="${DBCACHE}" -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" -printtoconsole=0 || true
+  # Use the pre-built binaries from BINARIES_DIR
+  taskset -c 0-15 "${BINARIES_DIR}/bitcoind-${commit}" -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${CHAIN}" -stopatheight=1 -printtoconsole=0
+  taskset -c 0-15 "${BINARIES_DIR}/bitcoind-${commit}" -datadir="${TMP_DATADIR}" -connect="${CONNECT_ADDRESS}" -daemon=0 -chain="${CHAIN}" -dbcache="${DBCACHE}" -pausebackgroundsync=1 -loadutxosnapshot="${UTXO_PATH}" -printtoconsole=0 || true
   clean_logs "${TMP_DATADIR}"
 }
 
@@ -133,6 +119,7 @@ run_benchmark() {
   local stop_at_height="$8"
   local connect_address="$9"
   local dbcache="${10}"
+  local BINARIES_DIR="${11}"
 
   # Export functions so they can be used by hyperfine
   export -f setup_assumeutxo_snapshot_run
@@ -144,8 +131,9 @@ run_benchmark() {
 
   # Run hyperfine
   hyperfine \
-    --setup "setup_assumeutxo_snapshot_run {commit} ${TMP_DATADIR}" \
-    --prepare "prepare_assumeutxo_snapshot_run ${TMP_DATADIR} ${UTXO_PATH} ${connect_address} ${chain} ${dbcache}" \
+    --shell=bash \
+    --setup "setup_assumeutxo_snapshot_run ${TMP_DATADIR} {commit}" \
+    --prepare "prepare_assumeutxo_snapshot_run ${TMP_DATADIR} ${UTXO_PATH} ${connect_address} ${chain} ${dbcache} {commit} ${BINARIES_DIR}" \
     --conclude "conclude_assumeutxo_snapshot_run {commit} ${TMP_DATADIR} ${png_dir}" \
     --cleanup "cleanup_assumeutxo_snapshot_run ${TMP_DATADIR}" \
     --runs 1 \
@@ -153,14 +141,14 @@ run_benchmark() {
     --export-json "${results_file}" \
     --command-name "base (${base_commit})" \
     --command-name "head (${head_commit})" \
-    "taskset -c 1 perf script flamegraph taskset -c 2-15 build/src/bitcoind -datadir=${TMP_DATADIR} \-connect=${connect_address} -daemon=0 -chain=${chain} -stopatheight=${stop_at_height} -dbcache=${dbcache} -printtoconsole=0" \
-    -L commit "${base_commit},${head_commit}"
+    "taskset -c 1 perf script flamegraph taskset -c 2-15 ${BINARIES_DIR}/bitcoind-{commit} -datadir=${TMP_DATADIR} -connect=${connect_address} -daemon=0 -chain=${chain} -stopatheight=${stop_at_height} -dbcache=${dbcache} -printtoconsole=0" \
+    -L commit "base,head"
 }
 
 # Main execution
-if [ "$#" -ne 10 ]; then
-  echo "Usage: $0 base_commit head_commit TMP_DATADIR UTXO_PATH results_dir png_dir chain stop_at_height connect_address dbcache"
+if [ "$#" -ne 11 ]; then
+  echo "Usage: $0 base_commit head_commit TMP_DATADIR UTXO_PATH results_dir png_dir chain stop_at_height connect_address dbcache BINARIES_DIR"
   exit 1
 fi
 
-run_benchmark "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"
+run_benchmark "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}"
