@@ -92,8 +92,8 @@ conclude_assumeutxo_snapshot_run() {
   fi
 
   # Move flamegraph if exists
-  if [ -e flamegraph.html ]; then
-    mv flamegraph.html "${commit}"-flamegraph.html
+  if [ -e flamegraph.svg ]; then
+    mv flamegraph.svg "${commit}"-flamegraph.svg
   fi
 }
 
