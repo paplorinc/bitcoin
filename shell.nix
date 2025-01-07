@@ -54,6 +54,7 @@ in pkgs.mkShell {
     uv
 
     # Benchmarking
+    cargo-flamegraph
     flamegraph
     hyperfine
     jq

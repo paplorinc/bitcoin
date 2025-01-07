@@ -100,7 +100,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: flamegraph-${{ matrix.network }}
-          path: "**/*-flamegraph.html"
+          path: "**/*-flamegraph.svg"
       - name: Write GitHub and runner context files
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
