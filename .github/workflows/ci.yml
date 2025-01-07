@@ -54,7 +54,7 @@ jobs:
           - network: mainnet-large
             timeout: 600
             utxo_path: /var/lib/bitcoin/utxo-840000.dat
-            dbcache: 10000
+            dbcache: 32000
     runs-on: [self-hosted, linux, x64]
     timeout-minutes: ${{ matrix.timeout }}
     env:
