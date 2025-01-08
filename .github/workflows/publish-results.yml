@@ -180,7 +180,6 @@ jobs:
                                 <table class="min-w-full table-auto mb-4">
                                   <thead>
                                     <tr class="bg-gray-50">
-                                      <th class="px-4 py-2">Branch</th>
                                       <th class="px-4 py-2">Command</th>
                                       <th class="px-4 py-2">Mean (s)</th>
                                       <th class="px-4 py-2">Std Dev</th>
@@ -190,14 +189,11 @@ jobs:
                                   </thead>
                                   <tbody>
                                     <tr class="border-t">
-                                      <td class="px-4 py-2 font-mono text-sm">
-                                        <a href="https://github.com/bitcoin-dev-tools/benchcoin/commit/${commitShortId}">${commitShortId}</a>
-                                      </td>
-                                      <td class="px-4 py-2 font-mono text-sm">${result.command}</td>
-                                      <td class="px-4 py-2 text-right">${result.mean.toFixed(3)}</td>
-                                      <td class="px-4 py-2 text-right">${result.stddev?.toFixed(3) || 'N/A'}</td>
-                                      <td class="px-4 py-2 text-right">${result.user.toFixed(3)}</td>
-                                      <td class="px-4 py-2 text-right">${result.system.toFixed(3)}</td>
+                                      <td class="px-4 py-2 font-mono text-sm text-center">${result.command}</td>
+                                      <td class="px-4 py-2 text-center">${result.mean.toFixed(3)}</td>
+                                      <td class="px-4 py-2 text-center">${result.stddev?.toFixed(3) || 'N/A'}</td>
+                                      <td class="px-4 py-2 text-center">${result.user.toFixed(3)}</td>
+                                      <td class="px-4 py-2 text-center">${result.system.toFixed(3)}</td>
                                     </tr>
                                   </tbody>
                                 </table>
