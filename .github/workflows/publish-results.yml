@@ -202,7 +202,7 @@ jobs:
                                   </tbody>
                                 </table>
                                 ${fs.existsSync(flameGraphPath) ? `
-                                  <object data="${flameGraphFile}" type="image/svg+xml" width="100%" style="height: 600px;" class="mb-4"></object>
+                                  <object data="${flameGraphFile}" type="image/svg+xml" width="100%" style="height: 100%;" class="mb-4"></object>
                                 ` : ''}
                                 ${plots}
                               `;
