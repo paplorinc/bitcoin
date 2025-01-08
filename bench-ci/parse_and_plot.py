@@ -35,16 +35,6 @@ def parse_leveldb_generated_table_line(line):
     parsed_datetime = datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
     return parsed_datetime, int(keys_count_str), int(bytes_count_str)
 
-
-def parse_bench_blockindex_line(line):
-    match = re.match(r'^([\d\-:TZ]+)  block index\s+([\d.]+)ms', line)
-    if not match:
-        return None
-    iso_str, time_ms = match.groups()
-    parsed_datetime = datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
-    return parsed_datetime, float(time_ms)
-
-
 def parse_validation_txadd_line(line):
     match = re.match(r'^([\d\-:TZ]+) \[validation] TransactionAddedToMempool: txid=.+wtxid=.+', line)
     if not match:
@@ -76,7 +66,6 @@ def parse_log_file(log_file):
         update_tip_data = []
         leveldb_compact_data = []
         leveldb_gen_table_data = []
-        bench_blockindex_data = []
         validation_txadd_data = []
         coindb_write_batch_data = []
         coindb_commit_data = []
@@ -88,8 +77,6 @@ def parse_log_file(log_file):
                 leveldb_compact_data.append(result)
             elif result := parse_leveldb_generated_table_line(line):
                 leveldb_gen_table_data.append(result)
-            elif result := parse_bench_blockindex_line(line):
-                bench_blockindex_data.append(result)
             elif result := parse_validation_txadd_line(line):
                 validation_txadd_data.append(result)
             elif result := parse_coindb_write_batch_line(line):
@@ -104,7 +91,7 @@ def parse_log_file(log_file):
         assert all(update_tip_data[i][0] <= update_tip_data[i + 1][0] for i in
                    range(len(update_tip_data) - 1)), "UpdateTip entries are not sorted by time"
 
-    return update_tip_data, leveldb_compact_data, leveldb_gen_table_data, bench_blockindex_data, validation_txadd_data, coindb_write_batch_data, coindb_commit_data
+    return update_tip_data, leveldb_compact_data, leveldb_gen_table_data, validation_txadd_data, coindb_write_batch_data, coindb_commit_data
 
 
 def generate_plot(x, y, x_label, y_label, title, output_file):
@@ -133,8 +120,7 @@ if __name__ == "__main__":
     png_dir = sys.argv[2]
     os.makedirs(png_dir, exist_ok=True)
 
-    update_tip_data, leveldb_compact_data, leveldb_gen_table_data, bench_blockindex_data, validation_txadd_data, coindb_write_batch_data, coindb_commit_data = parse_log_file(
-        log_file)
+    update_tip_data, leveldb_compact_data, leveldb_gen_table_data, validation_txadd_data, coindb_write_batch_data, coindb_commit_data = parse_log_file(log_file)
     times, heights, tx_counts, cache_size, cache_count = zip(*update_tip_data)
     float_minutes = [(t - times[0]).total_seconds() / 60 for t in times]
 
@@ -154,12 +140,6 @@ if __name__ == "__main__":
         leveldb_gen_table_float_minutes = [(t - times[0]).total_seconds() / 60 for t in leveldb_gen_table_times]
         generate_plot(leveldb_gen_table_float_minutes, leveldb_gen_table_keys, "Elapsed minutes", "Number of keys", "LevelDB Keys Generated vs Time", os.path.join(png_dir, "leveldb_gen_keys_vs_time.png"))
         generate_plot(leveldb_gen_table_float_minutes, leveldb_gen_table_bytes, "Elapsed minutes", "Number of bytes", "LevelDB Bytes Generated vs Time", os.path.join(png_dir, "leveldb_gen_bytes_vs_time.png"))
-
-    # Bench block index load time
-    if bench_blockindex_data:
-        bench_blockindex_times, bench_blockindex_times_ms = zip(*bench_blockindex_data)
-        bench_blockindex_float_minutes = [(t - times[0]).total_seconds() / 60 for t in bench_blockindex_times]
-        generate_plot(bench_blockindex_float_minutes, bench_blockindex_times_ms, "Elapsed minutes", "time(ms)", "Block Index Load Time vs Time", os.path.join(png_dir, "bench_blockindex_vs_time.png"))
 
     # validation mempool add transaction lines
     if validation_txadd_data:
