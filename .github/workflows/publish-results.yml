@@ -172,7 +172,11 @@ jobs:
                               const plotDir = `${resultDir}/${network}-plots`;
                               const plots = fs.existsSync(plotDir)
                                 ? fs.readdirSync(plotDir)
-                                    .map(plot => `<img src="${network}-plots/${plot}" alt="${plot}" class="mb-4 max-w-full h-auto">`)
+                                    .map(plot => `
+                                      <a href="${network}-plots/${plot}" target="_blank">
+                                        <img src="${network}-plots/${plot}" alt="${plot}" class="mb-4 max-w-full h-auto">
+                                      </a>
+                                    `)
                                     .join('')
                                 : '';
 
