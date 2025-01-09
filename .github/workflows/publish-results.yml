@@ -181,7 +181,7 @@ jobs:
                                 : '';
 
                               return `
-                                <table class="min-w-full table-auto mb-4">
+                                <table class="min-w-full table-auto">
                                   <thead>
                                     <tr class="bg-gray-50">
                                       <th class="px-4 py-2">Command</th>
@@ -193,7 +193,12 @@ jobs:
                                   </thead>
                                   <tbody>
                                     <tr class="border-t">
-                                      <td class="px-4 py-2 font-mono text-sm text-center">${result.command}</td>
+                                      <td class="px-4 py-2 font-mono text-sm text-center">
+                                        ${result.command.replace(
+                                          /\((\w+)\)/,
+                                          (_, commit) => `(<a href="https://github.com/bitcoin-dev-tools/benchcoin/commit/${commit}" target="_blank">${commit.slice(0, 8)}</a>)`
+                                        )}
+                                      </td>
                                       <td class="px-4 py-2 text-center">${result.mean.toFixed(3)}</td>
                                       <td class="px-4 py-2 text-center">${result.stddev?.toFixed(3) || 'N/A'}</td>
                                       <td class="px-4 py-2 text-center">${result.user.toFixed(3)}</td>
