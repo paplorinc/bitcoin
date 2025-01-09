@@ -95,16 +95,22 @@ def parse_log_file(log_file):
 
 
 def generate_plot(x, y, x_label, y_label, title, output_file):
+    if not x or not y:
+        print(f"Skipping plot '{title}' as there is no data.")
+        return
+
     plt.figure(figsize=(30, 10))
     plt.plot(x, y)
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
+    plt.title(title, fontsize=20)
+    plt.xlabel(x_label, fontsize=16)
+    plt.ylabel(y_label, fontsize=16)
     plt.grid(True)
-    plt.xticks(rotation=90)
+    plt.xticks(rotation=90, fontsize=12)
+    plt.yticks(fontsize=12)
     plt.tight_layout()
     plt.savefig(output_file)
     plt.close()
+    print(f"Saved plot to {output_file}")
 
 
 if __name__ == "__main__":
