@@ -117,7 +117,7 @@ bool CCoinsViewDB::BatchWrite(CoinsViewCacheCursor& cursor, const uint256 &hashB
     batch.Write(DB_HEAD_BLOCKS, Vector(hashBlock, old_tip));
 
     auto SortedWrite{[&](std::vector<CoinsCachePair*>& entries) {
-        std::ranges::sort(entries, [](auto* a, auto* b) { return a->first < b->first; });
+        std::ranges::sort(entries, [](auto* a, auto* b) { return b->first < a->first; });
         for (const auto entry : entries) {
             if (entry->second.coin.IsSpent()) {
                 batch.Erase(CoinEntry(&entry->first));
